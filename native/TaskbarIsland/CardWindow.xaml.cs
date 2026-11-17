@@ -21,7 +21,19 @@ public partial class CardWindow : Window
 
     readonly SolidColorBrush accent = new(Accent.NeutralAccent);
     readonly Dictionary<string, Ellipse> rings = new();
-    bool open, playing, gameMode = true;
+    bool open, playing, gameMode = true, settingsOpen;
+    double anchorBottom;
+
+    void OnGear(object sender, RoutedEventArgs e)
+    {
+        settingsOpen = !settingsOpen;
+        SettingsContent.Measure(new Size(Card.Width - 28, double.PositiveInfinity));
+        var d = TimeSpan.FromMilliseconds(320);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        SettingsPanel.BeginAnimation(HeightProperty, new DoubleAnimation(settingsOpen ? SettingsContent.DesiredSize.Height : 0, d) { EasingFunction = ease });
+        SettingsPanel.BeginAnimation(OpacityProperty, new DoubleAnimation(settingsOpen ? 1 : 0, TimeSpan.FromMilliseconds(settingsOpen ? 320 : 150)));
+        GearSpin.BeginAnimation(RotateTransform.AngleProperty, new DoubleAnimation(settingsOpen ? 90 : 0, d) { EasingFunction = ease });
+    }
 
     public CardWindow()
     {
@@ -34,6 +46,10 @@ public partial class CardWindow : Window
         Cover.MouseLeftButtonUp += (_, _) => OpenSpotify?.Invoke();
 
         GameLabel.Text = S.GameMode;
+        ColorLabel.Text = S.Color;
+        GearButton.ToolTip = S.SettingsTip;
+        GearButton.Foreground = new SolidColorBrush(Color.FromArgb(0x80, 255, 255, 255));
+        SizeChanged += (_, _) => { if (open) Top = Math.Round(anchorBottom - ActualHeight); }; // grow upwards
         GameRow.ToolTip = S.GameModeTip;
         GameRow.MouseLeftButtonUp += (_, _) => { SetGameMode(!gameMode, animate: true); GameModeChanged?.Invoke(gameMode); };
 
@@ -109,6 +125,7 @@ public partial class CardWindow : Window
         UpdateLayout();
         double left = Math.Clamp(centerX - ActualWidth / 2, workArea.Left + 4, workArea.Right - ActualWidth - 4);
         Left = Math.Round(left);
+        anchorBottom = bottomY;
         Top = Math.Round(bottomY - ActualHeight);
         if (open) return;
         open = true;

@@ -24,7 +24,33 @@
         </TransformGroup>
       </Border.RenderTransform>
 
+      <Grid>
       <StackPanel>
+        <!-- settings: hidden until the gear is clicked; height springs open, card grows upwards -->
+        <Border x:Name="SettingsPanel" Height="0" Opacity="0" ClipToBounds="True">
+          <StackPanel x:Name="SettingsContent" Margin="0,20,0,0">
+            <Grid x:Name="GameRow" Background="#01000000" Cursor="Hand">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="&#xE7FC;" FontFamily="{StaticResource IconFont}" FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" Width="18"/>
+                <TextBlock x:Name="GameLabel" FontSize="12.5" Foreground="#D9FFFFFF" Margin="6,0,0,0" VerticalAlignment="Center"/>
+              </StackPanel>
+              <Border x:Name="Switch" Width="30" Height="16" CornerRadius="8" Background="#33FFFFFF" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Ellipse Width="12" Height="12" Fill="White" HorizontalAlignment="Left" Margin="2,0,0,0">
+                  <Ellipse.RenderTransform><TranslateTransform x:Name="KnobShift"/></Ellipse.RenderTransform>
+                </Ellipse>
+              </Border>
+            </Grid>
+            <Grid Margin="0,10,0,0">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="&#xE790;" FontFamily="{StaticResource IconFont}" FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" Width="18"/>
+                <TextBlock x:Name="ColorLabel" FontSize="12.5" Foreground="#D9FFFFFF" Margin="6,0,0,0" VerticalAlignment="Center"/>
+              </StackPanel>
+              <StackPanel x:Name="Swatches" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-3,0"/>
+            </Grid>
+            <Border Height="1" Background="#14FFFFFF" Margin="0,12,0,12"/>
+          </StackPanel>
+        </Border>
+
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
@@ -69,21 +95,17 @@
           </Button>
         </StackPanel>
 
-        <!-- settings footer: game-mode switch + colour swatches -->
-        <Border Height="1" Background="#14FFFFFF" Margin="0,8,0,8"/>
-        <Grid>
-          <StackPanel x:Name="GameRow" Orientation="Horizontal" VerticalAlignment="Center" Background="#01000000" Cursor="Hand">
-            <TextBlock Text="&#xE7FC;" FontFamily="{StaticResource IconFont}" FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center"/>
-            <TextBlock x:Name="GameLabel" FontSize="12" Foreground="#B3FFFFFF" Margin="6,0,8,0" VerticalAlignment="Center"/>
-            <Border x:Name="Switch" Width="30" Height="16" CornerRadius="8" Background="#33FFFFFF" VerticalAlignment="Center">
-              <Ellipse Width="12" Height="12" Fill="White" HorizontalAlignment="Left" Margin="2,0,0,0">
-                <Ellipse.RenderTransform><TranslateTransform x:Name="KnobShift"/></Ellipse.RenderTransform>
-              </Ellipse>
-            </Border>
-          </StackPanel>
-          <StackPanel x:Name="Swatches" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-        </Grid>
       </StackPanel>
+
+      <!-- gear (top-right corner): shows / hides the settings -->
+      <Button x:Name="GearButton" Style="{StaticResource CtlButton}" HorizontalAlignment="Right" VerticalAlignment="Top"
+              Margin="0,-10,-10,0" Click="OnGear">
+        <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="13" RenderTransformOrigin="0.5,0.5"
+                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}">
+          <TextBlock.RenderTransform><RotateTransform x:Name="GearSpin"/></TextBlock.RenderTransform>
+        </TextBlock>
+      </Button>
+      </Grid>
     </Border>
   </Grid>
 </Window>

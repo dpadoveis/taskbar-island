@@ -15,6 +15,8 @@ public static class S
     public static string Next => Pt ? "Próxima" : "Next";
     public static string GameMode => Pt ? "Modo jogo" : "Game mode";
     public static string GameModeTip => Pt ? "Ligado: o widget some em jogos de tela cheia e libera memória" : "On: the widget hides in fullscreen games and frees memory";
+    public static string Color => Pt ? "Cor" : "Colour";
+    public static string SettingsTip => Pt ? "Configurações" : "Settings";
     public static string ColorAuto => Pt ? "Cor da capa (automático)" : "Cover colour (automatic)";
     public static string[] ColorNames => Pt
         ? ["Rosa", "Azul", "Verde", "Roxo", "Laranja", "Branco"]

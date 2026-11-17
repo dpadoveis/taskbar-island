@@ -92,7 +92,7 @@ A parte da música funciona como uma "ilha" que muda de forma:
 
 ![Cartão expandido acima da barra](docs/img/card.png)
 
-No rodapé do cartão ficam duas opções (elas ficam salvas):
+Clicando na **engrenagem ⚙** no canto de cima do cartão, aparecem duas opções (elas ficam salvas):
 
 - **🎮 Modo jogo** (chavinha): ligado = o widget some nos jogos em tela cheia; desligado = ele continua aparecendo mesmo jogando.
 - **Bolinhas de cor:** a primeira (colorida) usa a **cor da capa** automaticamente; as outras deixam uma **cor fixa** (rosa, azul, verde, roxo, laranja ou branco).
@@ -120,7 +120,7 @@ As cores da ilha, do equalizador e da barrinha de progresso mudam conforme a **c
 
 Quando você abre um **jogo em tela cheia** (ou vídeo em tela cheia), o widget **some sozinho e libera a memória**. Quando você sai do jogo, ele volta em uns 2 segundos.
 
-Quer ver a música e as baterias **enquanto joga**? Desligue o **Modo jogo** na chavinha do cartão (ou no botão direito → Modo jogo).
+Quer ver a música e as baterias **enquanto joga**? Desligue o **Modo jogo** (cartão → engrenagem ⚙ → chavinha, ou botão direito → Modo jogo).
 
 Alguns jogos rodam em **"janela sem borda"** (borderless) e o Windows não avisa que é tela cheia. Para esses, coloque o jogo numa lista:
 
