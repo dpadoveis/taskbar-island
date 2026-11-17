@@ -4,7 +4,7 @@ using Windows.Media.Control;
 
 namespace TaskbarIsland.Core;
 
-public sealed record MediaInfo(string Title, string Artist, bool Playing, double Position, double Duration, byte[]? Thumbnail, string ThumbId);
+public sealed record MediaInfo(string Title, string Artist, string Album, bool Playing, double Position, double Duration, byte[]? Thumbnail, string ThumbId);
 
 /// <summary>Spotify (desktop app) via the Windows media controls. Reports null when Spotify isn't open.</summary>
 public sealed class SpotifySource(Action<MediaInfo?> update)
@@ -76,7 +76,7 @@ public sealed class SpotifySource(Action<MediaInfo?> update)
             thumb = await ReadThumb(props.Thumbnail);
             thumbId = thumb == null ? "" : Convert.ToHexString(MD5.HashData(thumb))[..12];
         }
-        update(new MediaInfo(title, props.Artist ?? props.AlbumArtist ?? "", playing, position, Math.Max(duration, 0), thumb, thumbId));
+        update(new MediaInfo(title, props.Artist ?? props.AlbumArtist ?? "", props.AlbumTitle ?? "", playing, position, Math.Max(duration, 0), thumb, thumbId));
     }
 
     static async Task<byte[]?> ReadThumb(Windows.Storage.Streams.IRandomAccessStreamReference? r)

@@ -13,6 +13,7 @@ public static class S
     public static string Prev => Pt ? "Anterior" : "Previous";
     public static string PlayPause => Pt ? "Tocar/Pausar" : "Play/Pause";
     public static string Next => Pt ? "Próxima" : "Next";
+    public static string OpenSpotify => Pt ? "Abrir o Spotify" : "Open Spotify";
     public static string Asleep => Pt ? "dormindo ou desligado" : "asleep or off";
     public static string ChargingCable => Pt ? "carregando pelo cabo" : "charging (cable)";
     public static string Charging => Pt ? "carregando" : "charging";

@@ -5,8 +5,11 @@ namespace TaskbarIsland.Core;
 
 public static class Accent
 {
-    /// <summary>Most vivid colour of the cover, pushed to a lightness that reads on a black island.</summary>
-    public static Color FromCover(BitmapSource cover)
+    public static readonly Color NeutralAccent = Color.FromRgb(0xE8, 0xE8, 0xE8);
+    public static readonly Color NeutralTint = Color.FromRgb(0x0E, 0x0E, 0x0E);
+
+    /// <summary>Accent: vivid cover colour that reads on a dark island. Tint: a deep shade of it, for backgrounds.</summary>
+    public static (Color Accent, Color Tint) FromCover(BitmapSource cover)
     {
         var small = new FormatConvertedBitmap(
             new TransformedBitmap(cover, new ScaleTransform(12.0 / cover.PixelWidth, 12.0 / cover.PixelHeight)),
@@ -24,13 +27,13 @@ public static class Accent
             double score = s * 1.6 + l * 0.6 - Math.Abs(l - 0.55);
             if (score > bestScore) { bestScore = score; br = r; bg = g; bb = b; bs = s; }
         }
-        if (bs < 0.18) return Color.FromRgb(0xE8, 0xE8, 0xE8); // greyscale cover -> neutral
+        if (bs < 0.18) return (NeutralAccent, NeutralTint); // greyscale cover -> neutral
 
         double mx = Math.Max(br, Math.Max(bg, bb)), mn = Math.Min(br, Math.Min(bg, bb)), d = mx - mn, hue = 0;
         if (d > 0)
             hue = mx == br ? ((bg - bb) / d) % 6 : mx == bg ? (bb - br) / d + 2 : (br - bg) / d + 4;
         hue = (hue * 60 + 360) % 360;
-        return Hsl(hue, 0.85, 0.70);
+        return (Hsl(hue, 0.85, 0.70), Hsl(hue, 0.45, 0.13));
     }
 
     static Color Hsl(double h, double s, double l)

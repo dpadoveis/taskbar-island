@@ -83,10 +83,19 @@ Na primeira vez que abre, ele já se configura para **abrir sozinho toda vez que
 
 ## 3. Como usar
 
+A parte da música funciona como uma "ilha" que muda de forma:
+
+- **Tocando:** capa, nome da música, artista e um equalizador animado.
+- **Pausado há mais de 30 segundos:** a ilha encolhe para só a capa e fica assim até você dar play (passar o mouse ainda abre o cartão).
+- **Spotify fechado:** vira um botãozinho redondo com uma nota musical — clique nele para **abrir o Spotify**.
+- A ilha e o cartão ganham um **tom da cor da capa** do álbum.
+
+![Cartão expandido acima da barra](docs/img/card.png)
+
 | Ação | O que faz |
 |---|---|
-| Passar o mouse em cima da música | aparecem os botões **⏮ ⏯ ⏭** |
-| Clicar na **capa** | tocar / pausar |
+| Passar o mouse em cima da música | abre um **cartão acima da barra** com a capa grande, álbum, tempo da música e os botões **⏮ ⏯ ⏭** |
+| Clicar na **capa** | tocar / pausar (no cartão: abre o Spotify) |
 | **Rodinha do mouse** em cima da música | próxima / anterior |
 | Passar o mouse em cima de uma **bateria** | mostra o nome do aparelho e a **porcentagem exata** |
 | **Botão direito** em qualquer parte do widget | menu: **Iniciar com o Windows** (liga/desliga), **Editar lista de jogos…**, **Sair** |
@@ -98,7 +107,7 @@ Na primeira vez que abre, ele já se configura para **abrir sozinho toda vez que
 - ⚡ **raio** = carregando;
 - **apagado / transparente** = o aparelho está dormindo ou desligado (ele volta sozinho quando você usar o aparelho).
 
-As cores do equalizador e da barrinha de progresso mudam conforme a **cor da capa** do álbum.
+As cores da ilha, do equalizador e da barrinha de progresso mudam conforme a **cor da capa** do álbum.
 
 ---
 
@@ -183,7 +192,8 @@ native/
     Core/Spotify.cs     música via controles de mídia do Windows (só Spotify)
     Core/Win32.cs       barra de tarefas, tela cheia, iniciar com o Windows
     Core/Strings.cs     textos PT/EN
-    MainWindow.xaml(.cs) visual, animações, modo jogo
+    MainWindow.xaml(.cs) ilha (modos fechado/compacto/normal), baterias, modo jogo
+    CardWindow.xaml(.cs) cartão expandido acima da barra
   TaskbarIsland.Tests/  testes dos protocolos (xUnit)
 ```
 

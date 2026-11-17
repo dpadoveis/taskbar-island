@@ -33,5 +33,33 @@
         </Setter.Value>
       </Setter>
     </Style>
+
+    <!-- bigger round-hover button for the expanded card -->
+    <Style x:Key="CardButton" TargetType="Button" BasedOn="{StaticResource CtlButton}">
+      <Setter Property="Width" Value="42"/>
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Foreground" Value="#E6FFFFFF"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bg" Background="Transparent" CornerRadius="19" RenderTransformOrigin="0.5,0.5">
+              <Border.RenderTransform><ScaleTransform x:Name="sc"/></Border.RenderTransform>
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bg" Property="Background" Value="#1FFFFFFF"/>
+                <Setter Property="Foreground" Value="White"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bg" Property="RenderTransform">
+                  <Setter.Value><ScaleTransform ScaleX="0.88" ScaleY="0.88"/></Setter.Value>
+                </Setter>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Application.Resources>
 </Application>
