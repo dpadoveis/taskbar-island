@@ -346,7 +346,7 @@ public partial class MainWindow : Window
         bool onCard = false;
         if (CardOpen)
         {
-            try { var q = card!.PointFromScreen(new Point(c.X, c.Y)); onCard = q.X >= 0 && q.Y >= 0 && q.X < card.ActualWidth && q.Y < card.ActualHeight; } catch { }
+            onCard = card!.CardContains(c.X, c.Y); // the visible card only, not the transparent space above it
         }
         foreach (var v in devices.Values) v.Highlight(inWindow && Contains(v.Root, p));
 

@@ -3,13 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="TaskbarIslandCard" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True" ShowActivated="False"
-        SizeToContent="WidthAndHeight" UseLayoutRounding="True" SnapsToDevicePixels="True"
+        SizeToContent="Width" UseLayoutRounding="True" SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="Grayscale"
         FontFamily="{StaticResource TextFont}" Foreground="White">
 
-  <!-- 1/255 alpha margin keeps the scale-in animation from being clipped and the card hoverable -->
-  <Grid Background="#01000000">
-    <Border x:Name="Card" Width="312" Margin="10" Padding="14,14,14,10" CornerRadius="18"
+  <!-- fully transparent around the card: those pixels click through. The window is sized for the open settings,
+       the card sits at the bottom, so opening the settings never resizes the window (smooth animation). -->
+  <Grid>
+    <Border x:Name="Card" Width="312" Margin="10" VerticalAlignment="Bottom" Padding="14,14,14,10" CornerRadius="18"
             BorderBrush="#1CFFFFFF" BorderThickness="1" RenderTransformOrigin="0.5,1">
       <Border.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">

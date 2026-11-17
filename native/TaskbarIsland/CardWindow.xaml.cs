@@ -22,17 +22,32 @@ public partial class CardWindow : Window
     readonly SolidColorBrush accent = new(Accent.NeutralAccent);
     readonly Dictionary<string, Ellipse> rings = new();
     bool open, playing, gameMode = true, settingsOpen;
-    double anchorBottom;
+    double settingsHeight;
+
+    /// <summary>Short UI transitions run at 60 fps (the widget's steady animations run at 20).</summary>
+    static T Smooth<T>(T a) where T : Timeline { Timeline.SetDesiredFrameRate(a, 60); return a; }
 
     void OnGear(object sender, RoutedEventArgs e)
     {
         settingsOpen = !settingsOpen;
-        SettingsContent.Measure(new Size(Card.Width - 28, double.PositiveInfinity));
-        var d = TimeSpan.FromMilliseconds(320);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        SettingsPanel.BeginAnimation(HeightProperty, new DoubleAnimation(settingsOpen ? SettingsContent.DesiredSize.Height : 0, d) { EasingFunction = ease });
-        SettingsPanel.BeginAnimation(OpacityProperty, new DoubleAnimation(settingsOpen ? 1 : 0, TimeSpan.FromMilliseconds(settingsOpen ? 320 : 150)));
-        GearSpin.BeginAnimation(RotateTransform.AngleProperty, new DoubleAnimation(settingsOpen ? 90 : 0, d) { EasingFunction = ease });
+        var d = TimeSpan.FromMilliseconds(300);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+        // the window is already tall enough: only the panel inside grows, the window never resizes
+        SettingsPanel.BeginAnimation(HeightProperty, Smooth(new DoubleAnimation(settingsOpen ? settingsHeight : 0, d) { EasingFunction = ease }));
+        SettingsPanel.BeginAnimation(OpacityProperty, Smooth(new DoubleAnimation(settingsOpen ? 1 : 0, TimeSpan.FromMilliseconds(settingsOpen ? 300 : 160))
+            { BeginTime = TimeSpan.FromMilliseconds(settingsOpen ? 60 : 0) }));
+        GearSpin.BeginAnimation(RotateTransform.AngleProperty, Smooth(new DoubleAnimation(settingsOpen ? 90 : 0, d) { EasingFunction = ease }));
+    }
+
+    /// <summary>Is this screen point (physical px) on the visible card itself (not the transparent space above)?</summary>
+    public bool CardContains(int x, int y)
+    {
+        try
+        {
+            var p = Card.PointFromScreen(new Point(x, y));
+            return p.X >= 0 && p.Y >= 0 && p.X <= Card.ActualWidth && p.Y <= Card.ActualHeight;
+        }
+        catch { return false; }
     }
 
     public CardWindow()
@@ -49,7 +64,6 @@ public partial class CardWindow : Window
         ColorLabel.Text = S.Color;
         GearButton.ToolTip = S.SettingsTip;
         GearButton.Foreground = new SolidColorBrush(Color.FromArgb(0x80, 255, 255, 255));
-        SizeChanged += (_, _) => { if (open) Top = Math.Round(anchorBottom - ActualHeight); }; // grow upwards
         GameRow.ToolTip = S.GameModeTip;
         GameRow.MouseLeftButtonUp += (_, _) => { SetGameMode(!gameMode, animate: true); GameModeChanged?.Invoke(gameMode); };
 
@@ -121,20 +135,27 @@ public partial class CardWindow : Window
     /// <summary>Pop the card up, horizontally centred on centerX (DIP), its bottom edge at bottomY (DIP).</summary>
     public void ShowAt(double centerX, double bottomY, Rect workArea)
     {
+        if (Height is double.NaN || settingsHeight == 0)
+        {
+            // size the window once for "settings open": card (closed) + settings panel + 10px margins
+            SettingsContent.Measure(new Size(Card.Width - 28, double.PositiveInfinity));
+            settingsHeight = Math.Ceiling(SettingsContent.DesiredSize.Height);
+            Card.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Height = Math.Ceiling(Card.DesiredSize.Height) + settingsHeight + 2;
+        }
         if (!IsVisible) Show();
         UpdateLayout();
         double left = Math.Clamp(centerX - ActualWidth / 2, workArea.Left + 4, workArea.Right - ActualWidth - 4);
         Left = Math.Round(left);
-        anchorBottom = bottomY;
-        Top = Math.Round(bottomY - ActualHeight);
+        Top = Math.Round(bottomY - Height);
         if (open) return;
         open = true;
         var spring = new BackEase { Amplitude = 0.4, EasingMode = EasingMode.EaseOut };
         var d = TimeSpan.FromMilliseconds(340);
-        BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
-        CardScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0.9, 1, d) { EasingFunction = spring });
-        CardScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(0.9, 1, d) { EasingFunction = spring });
-        CardShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(12, 0, d) { EasingFunction = spring });
+        BeginAnimation(OpacityProperty, Smooth(new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160))));
+        CardScale.BeginAnimation(ScaleTransform.ScaleXProperty, Smooth(new DoubleAnimation(0.9, 1, d) { EasingFunction = spring }));
+        CardScale.BeginAnimation(ScaleTransform.ScaleYProperty, Smooth(new DoubleAnimation(0.9, 1, d) { EasingFunction = spring }));
+        CardShift.BeginAnimation(TranslateTransform.YProperty, Smooth(new DoubleAnimation(12, 0, d) { EasingFunction = spring }));
         Animate();
     }
 
