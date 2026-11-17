@@ -1,0 +1,16 @@
+# build output
+bin/
+obj/
+dist/
+app/
+*.user
+
+# local dev tooling (Python screenshots / measurements)
+.venv/
+scripts/
+__pycache__/
+
+# editors / OS
+.vs/
+.vscode/
+Thumbs.db
