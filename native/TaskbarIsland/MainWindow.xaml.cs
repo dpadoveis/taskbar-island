@@ -37,7 +37,8 @@ public partial class MainWindow : Window
 
     readonly CancellationTokenSource cts = new();
     readonly SpotifySource spotify;
-    readonly CardWindow card = new();
+    CardWindow? card; // created only while it is shown, then released (memory)
+    bool CardOpen => card?.IsOpen == true;
     readonly SolidColorBrush accent = new(Accent.NeutralAccent);
     readonly SolidColorBrush fg = new(Colors.White);
     readonly SolidColorBrush lowBrush = new(Color.FromRgb(0xFF, 0x99, 0xA4));
@@ -49,7 +50,9 @@ public partial class MainWindow : Window
     IntPtr hwnd;
     MediaInfo? media;
     Brush? coverBrush;
-    Color accentColor = Accent.NeutralAccent, tintColor = Accent.NeutralTint;
+    readonly Settings settings = Settings.Load();
+    Color coverAccent = Accent.NeutralAccent, coverTint = Accent.NeutralTint;   // derived from the cover
+    Color accentColor = Accent.NeutralAccent, tintColor = Accent.NeutralTint;   // what is shown (cover or preset)
     Mode mode = Mode.Closed;
     bool modeApplied, light, inGame, marqueeOverflow, hoverIsland, hoverCard;
     DateTime pausedSince = DateTime.Now, hoverStarted, hoverEnded;
@@ -80,8 +83,6 @@ public partial class MainWindow : Window
         ProgressTrack.SizeChanged += (_, _) => UpdateProgress(); // width springs between modes
         BuildMenu();
 
-        card.Command += c => spotify!.Command(c);
-        card.OpenSpotify += OpenSpotify;
 
         // automatic detection: each provider reports the devices it finds (nothing to configure)
         var sink = new Sink(this);
@@ -165,7 +166,7 @@ public partial class MainWindow : Window
         }
         if (trackChanged || prev!.Playing != m.Playing) { UpdateMode(); ApplyPlayState(); }
         UpdateProgress();
-        if (card.IsOpen) card.SetMedia(m, coverBrush, accentColor, tintColor);
+        if (CardOpen) card!.SetMedia(m, coverBrush, accentColor, tintColor);
     }
 
     void SetText(MediaInfo m)
@@ -198,7 +199,7 @@ public partial class MainWindow : Window
     void SetCover(byte[]? bytes)
     {
         coverBrush = null;
-        accentColor = Accent.NeutralAccent; tintColor = Accent.NeutralTint;
+        coverAccent = Accent.NeutralAccent; coverTint = Accent.NeutralTint;
         if (bytes != null)
         {
             try
@@ -213,15 +214,33 @@ public partial class MainWindow : Window
                 var brush = new ImageBrush(bmp) { Stretch = Stretch.UniformToFill };
                 brush.Freeze();
                 coverBrush = brush;
-                (accentColor, tintColor) = Accent.FromCover(bmp);
+                (coverAccent, coverTint) = Accent.FromCover(bmp);
             }
             catch { }
         }
         ArtCircle.Fill = coverBrush ?? new SolidColorBrush(Color.FromRgb(0x22, 0x22, 0x22));
         ArtGlyph.Visibility = coverBrush == null ? Visibility.Visible : Visibility.Collapsed;
+        ApplyColors();
+    }
+
+    /// <summary>Cover colour ("auto") or the user's preset; fades the island, equalizer and card to it.</summary>
+    void ApplyColors()
+    {
+        (accentColor, tintColor) = settings.Color == "auto"
+            ? (coverAccent, coverTint)
+            : Accent.FromPreset((Color)ColorConverter.ConvertFromString(settings.Color));
         var d = TimeSpan.FromMilliseconds(600);
         accent.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(accentColor, d));
-        IslandBg.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(tintColor, d));
+        if (mode != Mode.Closed) IslandBg.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(tintColor, d));
+        if (media != null && CardOpen) card!.SetMedia(media, coverBrush, accentColor, tintColor);
+    }
+
+    void SetGameModeEnabled(bool on)
+    {
+        settings.GameMode = on;
+        settings.Save();
+        card?.SetGameMode(on);
+        if (!on && inGame) ExitGameMode();
     }
 
     void UpdateProgress()
@@ -229,7 +248,7 @@ public partial class MainWindow : Window
         var m = media;
         double w = ProgressTrack.ActualWidth;
         ProgressFill.Width = m != null && m.Duration > 0 && w > 0 ? w * Math.Clamp(m.Position / m.Duration, 0, 1) : 0;
-        if (m != null && card.IsOpen) card.SetProgress(m.Position, m.Duration);
+        if (m != null && CardOpen) card!.SetProgress(m.Position, m.Duration);
     }
 
     // ===================== island modes =====================
@@ -267,7 +286,7 @@ public partial class MainWindow : Window
             Island.ToolTip = S.OpenSpotify;
             IslandBg.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(Accent.NeutralTint, TimeSpan.FromMilliseconds(400)));
             StopAnimations();
-            card.Close();
+            card?.Collapse();
         }
         else
         {
@@ -325,9 +344,9 @@ public partial class MainWindow : Window
         bool inWindow = p.X >= 0 && p.Y >= 0 && p.X < ActualWidth && p.Y < ActualHeight;
         bool onIsland = inWindow && Island.IsVisible && Contains(Island, p);
         bool onCard = false;
-        if (card.IsOpen)
+        if (CardOpen)
         {
-            try { var q = card.PointFromScreen(new Point(c.X, c.Y)); onCard = q.X >= 0 && q.Y >= 0 && q.X < card.ActualWidth && q.Y < card.ActualHeight; } catch { }
+            try { var q = card!.PointFromScreen(new Point(c.X, c.Y)); onCard = q.X >= 0 && q.Y >= 0 && q.X < card.ActualWidth && q.Y < card.ActualHeight; } catch { }
         }
         foreach (var v in devices.Values) v.Highlight(inWindow && Contains(v.Root, p));
 
@@ -338,11 +357,11 @@ public partial class MainWindow : Window
         if (changed) UpdateMode(); // hovering a compact island expands it
 
         // card: opens after a short dwell on the island, closes shortly after leaving island + card
-        if (mode != Mode.Closed && media != null && !card.IsOpen && hoverIsland && (DateTime.Now - hoverStarted).TotalMilliseconds > 350)
+        if (mode != Mode.Closed && media != null && !CardOpen && hoverIsland && (DateTime.Now - hoverStarted).TotalMilliseconds > 350)
             OpenCard();
-        else if (card.IsOpen && !hoverIsland && !hoverCard && (DateTime.Now - hoverEnded).TotalMilliseconds > 300)
+        else if (CardOpen && !hoverIsland && !hoverCard && (DateTime.Now - hoverEnded).TotalMilliseconds > 300)
         {
-            card.Close();
+            card?.Collapse();
             UpdateMode();
         }
     }
@@ -350,12 +369,40 @@ public partial class MainWindow : Window
     void OpenCard()
     {
         if (media == null) return;
-        card.SetMedia(media, coverBrush, accentColor, tintColor);
+        EnsureCard();
+        card!.SetMedia(media, coverBrush, accentColor, tintColor);
         var tb = Win32.TaskbarRect();
         if (tb == null) return;
         double s = VisualTreeHelper.GetDpi(this).DpiScaleX;
         var islandCenter = Island.TransformToAncestor(this).Transform(new Point(Island.ActualWidth / 2, 0));
         card.ShowAt(Left + islandCenter.X, tb.Value.Top / s + 4, SystemParameters.WorkArea);
+    }
+
+    void EnsureCard()
+    {
+        if (card != null) return;
+        var c = new CardWindow();
+        c.Command += cmd => spotify!.Command(cmd);
+        c.OpenSpotify += OpenSpotify;
+        c.SetGameMode(settings.GameMode);
+        c.SetColor(settings.Color);
+        c.GameModeChanged += SetGameModeEnabled;
+        c.ColorChosen += key => { settings.Color = key; settings.Save(); ApplyColors(); };
+        // once hidden, throw the window away a bit later and hand its memory back to Windows
+        c.Collapsed += () =>
+        {
+            var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+            t.Tick += (_, _) =>
+            {
+                t.Stop();
+                if (card != c || c.IsOpen) return;
+                card = null;
+                c.Close();
+                DelayedTrim(1);
+            };
+            t.Start();
+        };
+        card = c;
     }
 
     bool Contains(FrameworkElement e, Point p) =>
@@ -450,7 +497,8 @@ public partial class MainWindow : Window
         if (ticks % 15 == 0) { bool l = Win32.TaskbarIsLight(); if (l != light) ApplyTheme(l); }
 
         // game mode: fullscreen app, or a listed game in the foreground (catches borderless windows)
-        bool gameNow = Win32.FullscreenAppRunning() || (games.Count > 0 && games.Contains(Win32.ForegroundExe()));
+        bool gameNow = settings.GameMode
+            && (Win32.FullscreenAppRunning() || (games.Count > 0 && games.Contains(Win32.ForegroundExe())));
         gameStreak = gameNow != inGame ? gameStreak + 1 : 0;
         if (gameStreak >= 2) { gameStreak = 0; if (gameNow) EnterGameMode(); else ExitGameMode(); }
         if (inGame) return;
@@ -472,7 +520,7 @@ public partial class MainWindow : Window
     void EnterGameMode()
     {
         inGame = true;
-        card.Close(instant: true);
+        card?.Collapse(instant: true);
         Hide();
         StopAnimations();
         ArtCircle.Fill = null;
@@ -525,13 +573,15 @@ public partial class MainWindow : Window
     {
         var auto = new MenuItem { Header = S.StartWithWindows, IsCheckable = true };
         auto.Click += (_, _) => Win32.SetAutostart(auto.IsChecked);
+        var gameMode = new MenuItem { Header = S.GameMode, IsCheckable = true, ToolTip = S.GameModeTip };
+        gameMode.Click += (_, _) => SetGameModeEnabled(gameMode.IsChecked);
         var gamesItem = new MenuItem { Header = S.EditGames };
         gamesItem.Click += (_, _) => { LoadGames(); System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(gamesFile) { UseShellExecute = true }); };
         var quit = new MenuItem { Header = S.Quit };
         quit.Click += (_, _) => { cts.Cancel(); Application.Current.Shutdown(); };
         var menu = new ContextMenu();
-        menu.Items.Add(auto); menu.Items.Add(gamesItem); menu.Items.Add(new Separator()); menu.Items.Add(quit);
-        menu.Opened += (_, _) => auto.IsChecked = Win32.AutostartEnabled();
+        menu.Items.Add(auto); menu.Items.Add(gameMode); menu.Items.Add(gamesItem); menu.Items.Add(new Separator()); menu.Items.Add(quit);
+        menu.Opened += (_, _) => { auto.IsChecked = Win32.AutostartEnabled(); gameMode.IsChecked = settings.GameMode; };
         Root.ContextMenu = menu;
     }
 }

@@ -36,6 +36,17 @@ public static class Accent
         return (Hsl(hue, 0.85, 0.70), Hsl(hue, 0.45, 0.13));
     }
 
+    /// <summary>Accent + deep background tint for a fixed (preset) colour.</summary>
+    public static (Color Accent, Color Tint) FromPreset(Color c)
+    {
+        double r = c.R / 255.0, g = c.G / 255.0, b = c.B / 255.0;
+        double mx = Math.Max(r, Math.Max(g, b)), mn = Math.Min(r, Math.Min(g, b)), d = mx - mn, hue = 0;
+        if (d < 0.08) return (c, NeutralTint); // white/grey
+        hue = mx == r ? ((g - b) / d) % 6 : mx == g ? (b - r) / d + 2 : (r - g) / d + 4;
+        hue = (hue * 60 + 360) % 360;
+        return (c, Hsl(hue, 0.45, 0.13));
+    }
+
     static Color Hsl(double h, double s, double l)
     {
         double c = (1 - Math.Abs(2 * l - 1)) * s, x = c * (1 - Math.Abs(h / 60 % 2 - 1)), m = l - c / 2;

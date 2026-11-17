@@ -13,6 +13,12 @@ public static class S
     public static string Prev => Pt ? "Anterior" : "Previous";
     public static string PlayPause => Pt ? "Tocar/Pausar" : "Play/Pause";
     public static string Next => Pt ? "Próxima" : "Next";
+    public static string GameMode => Pt ? "Modo jogo" : "Game mode";
+    public static string GameModeTip => Pt ? "Ligado: o widget some em jogos de tela cheia e libera memória" : "On: the widget hides in fullscreen games and frees memory";
+    public static string ColorAuto => Pt ? "Cor da capa (automático)" : "Cover colour (automatic)";
+    public static string[] ColorNames => Pt
+        ? ["Rosa", "Azul", "Verde", "Roxo", "Laranja", "Branco"]
+        : ["Pink", "Blue", "Green", "Purple", "Orange", "White"];
     public static string OpenSpotify => Pt ? "Abrir o Spotify" : "Open Spotify";
     public static string Asleep => Pt ? "dormindo ou desligado" : "asleep or off";
     public static string ChargingCable => Pt ? "carregando pelo cabo" : "charging (cable)";

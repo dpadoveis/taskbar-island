@@ -92,13 +92,18 @@ A parte da música funciona como uma "ilha" que muda de forma:
 
 ![Cartão expandido acima da barra](docs/img/card.png)
 
+No rodapé do cartão ficam duas opções (elas ficam salvas):
+
+- **🎮 Modo jogo** (chavinha): ligado = o widget some nos jogos em tela cheia; desligado = ele continua aparecendo mesmo jogando.
+- **Bolinhas de cor:** a primeira (colorida) usa a **cor da capa** automaticamente; as outras deixam uma **cor fixa** (rosa, azul, verde, roxo, laranja ou branco).
+
 | Ação | O que faz |
 |---|---|
 | Passar o mouse em cima da música | abre um **cartão acima da barra** com a capa grande, álbum, tempo da música e os botões **⏮ ⏯ ⏭** |
 | Clicar na **capa** | tocar / pausar (no cartão: abre o Spotify) |
 | **Rodinha do mouse** em cima da música | próxima / anterior |
 | Passar o mouse em cima de uma **bateria** | mostra o nome do aparelho e a **porcentagem exata** |
-| **Botão direito** em qualquer parte do widget | menu: **Iniciar com o Windows** (liga/desliga), **Editar lista de jogos…**, **Sair** |
+| **Botão direito** em qualquer parte do widget | menu: **Iniciar com o Windows**, **Modo jogo** (liga/desliga), **Editar lista de jogos…**, **Sair** |
 
 **O que os ícones de bateria querem dizer:**
 
@@ -114,6 +119,8 @@ As cores da ilha, do equalizador e da barrinha de progresso mudam conforme a **c
 ## 4. Modo jogo
 
 Quando você abre um **jogo em tela cheia** (ou vídeo em tela cheia), o widget **some sozinho e libera a memória**. Quando você sai do jogo, ele volta em uns 2 segundos.
+
+Quer ver a música e as baterias **enquanto joga**? Desligue o **Modo jogo** na chavinha do cartão (ou no botão direito → Modo jogo).
 
 Alguns jogos rodam em **"janela sem borda"** (borderless) e o Windows não avisa que é tela cheia. Para esses, coloque o jogo numa lista:
 
