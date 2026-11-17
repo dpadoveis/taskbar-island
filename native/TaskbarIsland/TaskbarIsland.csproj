@@ -8,10 +8,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>TaskbarIsland</AssemblyName>
+    <Version>1.1.1</Version>
     <RootNamespace>TaskbarIsland</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- must stay off: WPF bindings in tooltip/menu templates need real cultures (crashed with it on) -->
+    <InvariantGlobalization>false</InvariantGlobalization>
     <!-- memory: workstation GC, no background GC thread, dynamic heap sizing (DATAS) -->
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
