@@ -103,7 +103,7 @@ Clicando na **engrenagem ⚙** no canto de cima do cartão, aparecem duas opçõ
 | Clicar na **capa** | tocar / pausar (no cartão: abre o Spotify) |
 | **Rodinha do mouse** em cima da música | próxima / anterior |
 | Passar o mouse em cima de uma **bateria** | mostra o nome do aparelho e a **porcentagem exata** |
-| **Botão direito** em qualquer parte do widget | menu: **Iniciar com o Windows**, **Modo jogo** (liga/desliga), **Editar lista de jogos…**, **Sair** |
+| **Botão direito** em qualquer parte do widget | menu: **Iniciar com o Windows**, **Modo jogo** (liga/desliga), **Editar lista de jogos…**, **Abrir pasta do programa**, **Sair** |
 
 **O que os ícones de bateria querem dizer:**
 
@@ -162,10 +162,15 @@ Pronto, não precisa reiniciar o widget.
 
 ## 6. Atualizar
 
-1. Botão direito no widget → **Sair**.
-2. Baixe a versão nova em **[Releases](../../releases/latest)** e extraia.
-3. **Substitua** o `TaskbarIsland.exe` antigo pelo novo (no mesmo lugar).
-4. Abra o `TaskbarIsland.exe`.
+1. Baixe a versão nova em **[Releases](../../releases/latest)** e extraia (botão direito no .zip → **Extrair tudo**).
+2. Botão direito no widget → **Abrir pasta do programa**. Abre a pasta onde ele está, com o `TaskbarIsland.exe` selecionado.
+3. Botão direito no widget → **Sair**.
+4. Copie o `TaskbarIsland.exe` novo e **cole na pasta que abriu**, substituindo o antigo (escolha **Substituir**).
+5. Abra o `TaskbarIsland.exe`.
+
+Suas escolhas (cor, modo jogo, lista de jogos) não se perdem.
+
+> Versão antiga, sem o item "Abrir pasta do programa"? Aperte **Ctrl + Shift + Esc** → aba **Detalhes** → botão direito em **TaskbarIsland.exe** → **Abrir local do arquivo**.
 
 ---
 

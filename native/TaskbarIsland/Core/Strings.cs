@@ -27,6 +27,7 @@ public static class S
     public static string Charging => Pt ? "carregando" : "charging";
     public static string StartWithWindows => Pt ? "Iniciar com o Windows" : "Start with Windows";
     public static string EditGames => Pt ? "Editar lista de jogos…" : "Edit game list…";
+    public static string OpenFolder => Pt ? "Abrir pasta do programa" : "Open program folder";
     public static string Quit => Pt ? "Sair" : "Quit";
 
     public static string GamesFileHeader => Pt

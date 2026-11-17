@@ -577,10 +577,16 @@ public partial class MainWindow : Window
         gameMode.Click += (_, _) => SetGameModeEnabled(gameMode.IsChecked);
         var gamesItem = new MenuItem { Header = S.EditGames };
         gamesItem.Click += (_, _) => { LoadGames(); System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(gamesFile) { UseShellExecute = true }); };
+        // Explorer opens with TaskbarIsland.exe selected: handy when updating (replace this file)
+        var folder = new MenuItem { Header = S.OpenFolder };
+        folder.Click += (_, _) =>
+        {
+            try { System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{Environment.ProcessPath}\""); } catch { }
+        };
         var quit = new MenuItem { Header = S.Quit };
         quit.Click += (_, _) => { cts.Cancel(); Application.Current.Shutdown(); };
         var menu = new ContextMenu();
-        menu.Items.Add(auto); menu.Items.Add(gameMode); menu.Items.Add(gamesItem); menu.Items.Add(new Separator()); menu.Items.Add(quit);
+        menu.Items.Add(auto); menu.Items.Add(gameMode); menu.Items.Add(gamesItem); menu.Items.Add(folder); menu.Items.Add(new Separator()); menu.Items.Add(quit);
         menu.Opened += (_, _) => { auto.IsChecked = Win32.AutostartEnabled(); gameMode.IsChecked = settings.GameMode; };
         Root.ContextMenu = menu;
     }
