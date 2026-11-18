@@ -107,63 +107,98 @@ public static partial class Win32
     /// <summary>Hand our idle pages back to Windows (shows up as a much smaller "Memory" in Task Manager).</summary>
     public static void TrimWorkingSet() => EmptyWorkingSet(GetCurrentProcess());
 
-    // ---------- autostart (HKCU Run + the "approved" flag Task Manager uses) ----------
-    const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run", RunName = "TaskbarIsland";
-    const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
-    // first byte 02 = enabled, 03 = disabled by the user in Task Manager; the rest is a timestamp (zero is fine)
-    static readonly byte[] Approved = [0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    // ---------- autostart: shortcut in the user's Startup folder ----------
+    // (The HKCU\...\Run entry used before was silently skipped by Explorer at logon on some Windows 11 PCs,
+    //  even with an "enabled" StartupApproved flag; the Startup folder is a separate, reliable path.)
+    const string LinkName = "Taskbar Island.lnk";
+    const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run", RunName = "TaskbarIsland"; // legacy
+    const string ApprovedRoot = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\";
 
-    /// <summary>null = no flag yet, true = enabled, false = disabled in Task Manager.</summary>
-    static bool? ApprovedState()
+    static string LinkPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), LinkName);
+
+    /// <summary>Task Manager's on/off flag for a startup item: null = none, true = enabled, false = disabled.</summary>
+    static bool? ApprovedState(string list, string name)
     {
-        using var k = Registry.CurrentUser.OpenSubKey(ApprovedKey);
-        return k?.GetValue(RunName) is byte[] { Length: > 0 } b ? (b[0] & 1) == 0 : null;
+        using var k = Registry.CurrentUser.OpenSubKey(ApprovedRoot + list);
+        return k?.GetValue(name) is byte[] { Length: > 0 } b ? (b[0] & 1) == 0 : null;
     }
 
-    static void SetApproved(bool on)
+    static void ClearApproved(string list, string name)
     {
-        using var k = Registry.CurrentUser.CreateSubKey(ApprovedKey, writable: true);
-        if (on) k.SetValue(RunName, Approved, RegistryValueKind.Binary);
-        else k.DeleteValue(RunName, throwOnMissingValue: false);
+        using var k = Registry.CurrentUser.OpenSubKey(ApprovedRoot + list, writable: true);
+        k?.DeleteValue(name, throwOnMissingValue: false);
     }
 
-    /// <summary>Registered AND not disabled in Task Manager's Startup apps.</summary>
-    public static bool AutostartEnabled()
+    static string? LinkTarget()
+    {
+        if (!File.Exists(LinkPath)) return null;
+        try
+        {
+            dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell")!)!;
+            string target = shell.CreateShortcut(LinkPath).TargetPath;
+            return string.IsNullOrEmpty(target) ? null : target;
+        }
+        catch { return null; }
+    }
+
+    static void CreateLink(string exe)
+    {
+        dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell")!)!;
+        dynamic link = shell.CreateShortcut(LinkPath);
+        link.TargetPath = exe;
+        link.WorkingDirectory = Path.GetDirectoryName(exe);
+        link.Description = "Taskbar Island";
+        link.Save();
+    }
+
+    static string? LegacyRunPath()
     {
         using var k = Registry.CurrentUser.OpenSubKey(RunKey);
-        return k?.GetValue(RunName) is string && ApprovedState() != false;
+        return k?.GetValue(RunName) is string cmd ? cmd.Trim().Trim('"') : null;
     }
 
+    static void RemoveLegacyRun()
+    {
+        using (var k = Registry.CurrentUser.OpenSubKey(RunKey, writable: true)) k?.DeleteValue(RunName, throwOnMissingValue: false);
+        ClearApproved("Run", RunName);
+    }
+
+    /// <summary>Starts with Windows: shortcut present and not disabled in Task Manager's Startup apps.</summary>
+    public static bool AutostartEnabled() =>
+        File.Exists(LinkPath) && ApprovedState("StartupFolder", LinkName) != false;
+
     /// <summary>
-    /// Self-heal: some Windows 11 builds skipped our Run entry at logon while it had no StartupApproved flag
-    /// (apps that have the flag started fine). If autostart is on but the flag is missing, write "enabled".
-    /// Never overrides a user's "disabled" choice.
+    /// Moves an old "Run" registry autostart to the Startup-folder shortcut (keeps a user's "disabled" choice by
+    /// not re-enabling). Safe to call on every start.
     /// </summary>
-    public static void EnsureAutostartApproved()
+    public static void MigrateAutostart()
     {
         try
         {
-            using var k = Registry.CurrentUser.OpenSubKey(RunKey);
-            if (k?.GetValue(RunName) is string && ApprovedState() == null) SetApproved(true);
+            var legacy = LegacyRunPath();
+            if (legacy == null) return;
+            bool userDisabled = ApprovedState("Run", RunName) == false;
+            if (!userDisabled && File.Exists(legacy) && !File.Exists(LinkPath)) CreateLink(legacy);
+            RemoveLegacyRun();
         }
         catch { }
     }
 
-    /// <summary>Exe path registered to start with Windows, if it still exists.</summary>
+    /// <summary>Installed exe registered to start with Windows (shortcut, or a legacy Run entry), if it exists.</summary>
     public static string? AutostartPath()
     {
-        using var k = Registry.CurrentUser.OpenSubKey(RunKey);
-        if (k?.GetValue(RunName) is not string cmd) return null;
-        var path = cmd.Trim().Trim('"');
-        return File.Exists(path) ? path : null;
+        var p = LinkTarget() ?? LegacyRunPath();
+        return p != null && File.Exists(p) ? p : null;
     }
 
     public static void SetAutostart(bool on, string? exePath = null)
     {
-        using var k = Registry.CurrentUser.OpenSubKey(RunKey, writable: true);
-        if (k == null) return;
-        if (on) k.SetValue(RunName, $"\"{exePath ?? Environment.ProcessPath}\"");
-        else k.DeleteValue(RunName, throwOnMissingValue: false);
-        try { SetApproved(on); } catch { }
+        try { RemoveLegacyRun(); } catch { }
+        if (on)
+        {
+            CreateLink(exePath ?? Environment.ProcessPath!);
+            ClearApproved("StartupFolder", LinkName); // an old "disabled" flag would otherwise keep it off
+        }
+        else if (File.Exists(LinkPath)) File.Delete(LinkPath);
     }
 }

@@ -119,7 +119,7 @@ public partial class MainWindow : Window
     /// <summary>On the very first launch, turn on "start with Windows" (the menu can turn it off).</summary>
     void FirstRun()
     {
-        Win32.EnsureAutostartApproved(); // repairs installs whose autostart Windows was skipping
+        Win32.MigrateAutostart(); // old "Run" registry autostart (skipped by Windows on some PCs) -> Startup shortcut
         var marker = System.IO.Path.Combine(DataDir, "installed");
         if (File.Exists(marker)) return;
         try { Win32.SetAutostart(true); File.WriteAllText(marker, DateTime.Now.ToString("O")); } catch { }

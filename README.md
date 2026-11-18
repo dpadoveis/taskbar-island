@@ -176,7 +176,7 @@ Ele acha sozinho onde o widget está instalado, fecha a versão antiga, se coloc
 
 ## 7. Desinstalar
 
-1. Botão direito no widget → desmarque **Iniciar com o Windows**.
+1. Botão direito no widget → desmarque **Iniciar com o Windows** (isso apaga o atalho `Taskbar Island` da pasta Inicializar do Windows).
 2. Botão direito → **Abrir pasta do programa** (deixe essa pasta aberta).
 3. Botão direito no widget → **Sair**.
 4. Apague o `TaskbarIsland.exe` da pasta que abriu (normalmente `%LOCALAPPDATA%\Programs\TaskbarIsland`).
