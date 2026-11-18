@@ -89,6 +89,8 @@ public partial class MainWindow : Window
         new CompxProvider(sink).Start(cts.Token);   // AULA keyboards (Compx receiver)
         new XentaProvider(sink).Start(cts.Token);   // Attack Shark mice
         new GHubProvider(sink).Start(cts.Token);    // any Logitech device with a battery, via G HUB
+        new MchoseProvider(sink).Start(cts.Token);  // MCHOSE V9 PRO headset
+        new DeluxProvider(sink).Start(cts.Token);   // Delux M800 Pro mouse
         spotify = new SpotifySource(m => Dispatcher.BeginInvoke(() => OnMedia(m)));
         spotify.Start(cts.Token);
 

@@ -53,6 +53,61 @@ public static class Protocols
         return new BatteryReading(pct, state == 3);
     }
 
+    // ---------- MCHOSE V9 PRO headset (2.4G dongle 291D:385D, collection FF90/0001) ----------
+    public const int MchoseVid = 0x291D, MchosePid = 0x385D;
+    public const int MchoseUsagePage = 0xFF90, MchoseUsage = 0x0001;
+
+    /// <summary>The only command ever sent: battery request, output report 0x55 (64 bytes).</summary>
+    public static byte[] MchoseRequest(int length = 64)
+    {
+        var f = new byte[Math.Max(length, 3)];
+        f[0] = 0x55; f[1] = 0x65; f[2] = 0x01;
+        return f;
+    }
+
+    /// <summary>Reply / push: 55 65 &lt;pct&gt; &lt;state&gt;. state 2 discharging, 3 charging, 4 full, 0x1A asleep;
+    /// 0 = cable plugged (level frozen, so no percentage is shown). Returns null for "asleep / no reading".</summary>
+    public static BatteryReading? ParseMchose(ReadOnlySpan<byte> f, out bool isBatteryFrame)
+    {
+        isBatteryFrame = f.Length >= 4 && f[0] == 0x55 && f[1] == 0x65;
+        if (!isBatteryFrame) return null;
+        byte pct = f[2], state = f[3];
+        if (pct > 100) { isBatteryFrame = false; return null; }
+        return state switch
+        {
+            0x04 => new BatteryReading(100, true),
+            0x03 or 0x00 => new BatteryReading(null, true),
+            0x02 when pct > 0 => new BatteryReading(pct, false),
+            _ => null, // 0x1A asleep / off, or unknown
+        };
+    }
+
+    // ---------- Delux M800 Pro mouse (2.4G receiver 248A:5B2F, wired 5B2E; collection FF00/0001) ----------
+    public const int DeluxVid = 0x248A;
+    public const int DeluxUsagePage = 0xFF00, DeluxUsage = 0x0001;
+
+    /// <summary>Read-only status query: feature report 0x0C, opcode 0x20, incrementing sequence at byte 4.</summary>
+    public static byte[] DeluxRequest(byte seq, int length = 33)
+    {
+        var f = new byte[Math.Max(length, 33)];
+        f[0] = 0x0C; f[1] = 0x01; f[2] = 0x20; f[4] = seq;
+        return f;
+    }
+
+    /// <summary>Feature reply: [0]=0x0C [2]=0x20, [6] presence, [18] percent, [19] state (0 discharging, 1 charging, 2 full).
+    /// Returns null when the mouse isn't connected / no reading.</summary>
+    public static BatteryReading? ParseDelux(ReadOnlySpan<byte> r)
+    {
+        if (r.Length < 20 || r[0] != 0x0C || r[2] != 0x20) return null;
+        byte pct = r[18], state = r[19];
+        if (pct > 100) return null;
+        bool connected = r[6] != 0 || pct > 0;
+        if (!connected) return null;
+        if (state == 2) return new BatteryReading(100, true);
+        if (pct == 0) return null;
+        return new BatteryReading(pct, state == 1);
+    }
+
     // ---------- Logitech G HUB websocket ----------
     public static BatteryReading? ParseGHubBattery(JsonElement payload)
     {

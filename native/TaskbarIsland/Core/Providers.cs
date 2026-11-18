@@ -83,6 +83,120 @@ public sealed class CompxProvider(IDeviceSink sink)
 }
 
 /// <summary>
+/// Shared shape for receivers that are asked for their battery every 60 s (and rescanned when USB devices
+/// change). A device only appears after it answered once; afterwards a missing answer shows it as asleep.
+/// </summary>
+public abstract class PolledProvider(IDeviceSink sink, string name)
+{
+    readonly HashSet<string> seen = new();
+    readonly AutoResetEvent rescan = new(false);
+
+    public void Start(CancellationToken ct)
+    {
+        DeviceList.Local.Changed += (_, _) => rescan.Set();
+        new Thread(() =>
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                try { Scan(); } catch { }
+                WaitHandle.WaitAny(new[] { ct.WaitHandle, rescan }, TimeSpan.FromSeconds(60));
+                Thread.Sleep(500);
+            }
+        }) { IsBackground = true, Name = name }.Start();
+    }
+
+    /// <summary>The device collections to query, with id / kind / display name for each.</summary>
+    protected abstract IEnumerable<(HidDevice Dev, string Id, DeviceKind Kind, string Name)> Find();
+
+    /// <summary>Ask one device; null = no valid answer right now.</summary>
+    protected abstract BatteryReading? Query(HidDevice dev);
+
+    void Scan()
+    {
+        var present = new HashSet<string>();
+        foreach (var (dev, id, kind, devName) in Find())
+        {
+            present.Add(id);
+            BatteryReading? r = null;
+            try { r = Query(dev); } catch { }
+            if (r != null) seen.Add(id);
+            if (seen.Contains(id)) sink.Report(new DeviceState(id, kind, devName, r));
+        }
+        foreach (var gone in seen.Where(id => !present.Contains(id)).ToList()) { seen.Remove(gone); sink.Remove(gone); }
+    }
+}
+
+/// <summary>
+/// MCHOSE V9 PRO headset (C-Media dongle 291D:385D, shared with S9/G9/V9). Sends ONLY the documented battery
+/// request (output report 55 65 01) on the FF90 collection; other report IDs on this dongle can brick it.
+/// </summary>
+public sealed class MchoseProvider(IDeviceSink sink) : PolledProvider(sink, "mchose")
+{
+    protected override IEnumerable<(HidDevice, string, DeviceKind, string)> Find() =>
+        Hid.FindAll(Protocols.MchoseVid, Protocols.MchosePid, Protocols.MchoseUsagePage, Protocols.MchoseUsage)
+           .Select(d => (d, $"mchose:{d.DevicePath.GetHashCode():x8}", DeviceKind.Headset, Hid.ProductName(d, "MCHOSE V9 Pro")));
+
+    protected override BatteryReading? Query(HidDevice dev)
+    {
+        if (!dev.TryOpen(out HidStream s)) return null;
+        using (s)
+        {
+            s.Write(Protocols.MchoseRequest(dev.GetMaxOutputReportLength()));
+            var buf = new byte[Math.Max(64, dev.GetMaxInputReportLength())];
+            var deadline = Environment.TickCount64 + 2000;
+            s.ReadTimeout = 300;
+            while (Environment.TickCount64 < deadline)
+            {
+                try
+                {
+                    int n = s.Read(buf, 0, buf.Length);
+                    var r = Protocols.ParseMchose(buf.AsSpan(0, n), out bool battery);
+                    if (battery) return r; // media-key / other frames on the same interface are skipped
+                }
+                catch (TimeoutException) { }
+            }
+        }
+        return null; // headset off: no answer
+    }
+}
+
+/// <summary>
+/// Delux M800 Pro mouse (Telink receiver 248A:5B2F, cable 248A:5B2E). Read-only status query: feature report
+/// 0x0C opcode 0x20 with an incrementing sequence byte. Settings opcodes (DPI, polling, bind...) are never sent.
+/// </summary>
+public sealed class DeluxProvider(IDeviceSink sink) : PolledProvider(sink, "delux")
+{
+    static readonly Dictionary<int, string> Known = new() { [0x5B2F] = "Delux M800 Pro", [0x5B2E] = "Delux M800 Pro" };
+    static byte seq;
+
+    protected override IEnumerable<(HidDevice, string, DeviceKind, string)> Find() =>
+        Known.Keys.SelectMany(pid => Hid.FindAll(Protocols.DeluxVid, pid, Protocols.DeluxUsagePage, Protocols.DeluxUsage))
+           .Where(d => d.GetMaxFeatureReportLength() >= 33)
+           .Select(d => (d, $"delux:{d.ProductID:x4}", DeviceKind.Mouse, Known[d.ProductID]));
+
+    protected override BatteryReading? Query(HidDevice dev)
+    {
+        if (!dev.TryOpen(out HidStream s)) return null;
+        using (s)
+        {
+            int len = dev.GetMaxFeatureReportLength();
+            for (int attempt = 0; attempt < 2; attempt++) // the receiver may need a second query to wake the link
+            {
+                s.SetFeature(Protocols.DeluxRequest(++seq, len));
+                Thread.Sleep(20);
+                var reply = new byte[len];
+                reply[0] = 0x0C;
+                s.GetFeature(reply);
+                var r = Protocols.ParseDelux(reply);
+                if (r != null) return r;
+                Thread.Sleep(20);
+            }
+        }
+        return null;
+    }
+}
+
+/// <summary>
 /// Attack Shark receivers (Xenta chip, VID 0x1D57): listen-only. The receiver volunteers
 /// `03 55 40 state pct` every ~2 s. Never writes anything to the device.
 /// </summary>

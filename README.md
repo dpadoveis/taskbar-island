@@ -37,6 +37,10 @@ Ele **acha seus aparelhos sozinho**: não tem nada para configurar. Só aparece 
 | Outros **teclados AULA** com receptor 2.4 GHz (F87, F99, F65…) | mesmo receptor do F75 | ⚠️ deve funcionar, não testado |
 | **Mouse Attack Shark X11** pelo receptor 2.4 GHz | direto pelo receptor | ✅ testado |
 | **Qualquer aparelho Logitech com bateria** (fone, mouse, teclado) | pelo programa **Logitech G HUB** | ✅ testado com o fone G522 |
+| **Fone MCHOSE V9 Pro** pelo receptor 2.4 GHz | direto pelo receptor (só o pedido de bateria) | ⚠️ deve funcionar, ainda não testado aqui |
+| **Mouse Delux M800 Pro** pelo receptor 2.4 GHz | direto pelo receptor (só leitura) | ⚠️ deve funcionar, ainda não testado aqui |
+
+> ⚠️ = o protocolo veio de outros projetos que testaram com o aparelho de verdade (veja [Créditos](#10-créditos)), mas ainda ninguém confirmou com este widget. Se você tem um desses e funcionou (ou não), conta pra gente numa [issue](../../issues).
 
 **Importante saber:**
 
@@ -185,6 +189,7 @@ Ele acha sozinho onde o widget está instalado, fecha a versão antiga, se coloc
 - **Não usa internet** e não coleta nada. Só conversa com coisas do próprio computador: os receptores USB, o G HUB e os controles de mídia do Windows.
 - O **mouse Attack Shark nunca recebe nenhum comando** — o widget só "escuta" o que o receptor já manda sozinho.
 - O **teclado AULA recebe só um pedido de bateria** a cada 1 minuto (o mesmo que o programa oficial da AULA usa). Nenhuma configuração do teclado é alterada.
+- O **fone MCHOSE** recebe só o pedido de bateria documentado, e o **mouse Delux** só uma consulta de leitura. Os comandos de configuração desses aparelhos (EQ, DPI, pareamento etc.) nunca são enviados.
 - Não precisa rodar como administrador.
 
 ---
@@ -197,7 +202,8 @@ C# / WPF (.NET 8), um único processo.
 native/
   TaskbarIsland/
     Core/Protocols.cs   protocolos de bateria (parsers puros, testados)
-    Core/Providers.cs   detecção automática: CompxProvider (AULA), XentaProvider (Attack Shark), GHubProvider (Logitech)
+    Core/Providers.cs   detecção automática: CompxProvider (AULA), XentaProvider (Attack Shark), GHubProvider (Logitech),
+                        MchoseProvider (MCHOSE V9 Pro), DeluxProvider (Delux M800 Pro)
     Core/Spotify.cs     música via controles de mídia do Windows (só Spotify)
     Core/Win32.cs       barra de tarefas, tela cheia, iniciar com o Windows
     Core/Installer.cs   o próprio .exe se instala / atualiza a cópia instalada (nunca rebaixa versão)
@@ -228,5 +234,7 @@ Os protocolos de bateria foram aprendidos com o trabalho de engenharia reversa d
 - AULA / Compx: [PyFlat/Device-Battery-Info#6](https://github.com/PyFlat/Device-Battery-Info/pull/6), [ushineko/sanshoku#36](https://github.com/ushineko/sanshoku/issues/36)
 - Attack Shark X11: [KaiSta/attackSharkOnLinux](https://github.com/KaiSta/attackSharkOnLinux), [HarukaYamamoto0/attack-shark-x11-driver](https://github.com/HarukaYamamoto0/attack-shark-x11-driver)
 - Logitech G HUB: [andyvorld/LGSTrayBattery](https://github.com/andyvorld/LGSTrayBattery)
+- MCHOSE V9 Pro: [NicolasBonnefont/mchose-v9](https://github.com/NicolasBonnefont/mchose-v9), [JoaoKSS/MCHOSE_v9_PRO_Controller](https://github.com/JoaoKSS/MCHOSE_v9_PRO_Controller), [PyFlat/Device-Battery-Info#24](https://github.com/PyFlat/Device-Battery-Info/issues/24)
+- Delux M800 Pro: [krisgfx9/Wireless-Device-Battery-Monitor#156](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor/pull/156), [xb-bx/m800-pro-driver](https://github.com/xb-bx/m800-pro-driver)
 
 Projeto sem ligação com Spotify, AULA, Attack Shark ou Logitech. Licença [MIT](LICENSE).
