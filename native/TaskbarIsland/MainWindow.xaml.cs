@@ -82,6 +82,8 @@ public partial class MainWindow : Window
         SizeChanged += (_, _) => Place();
         ProgressTrack.SizeChanged += (_, _) => UpdateProgress(); // width springs between modes
         BuildMenu();
+        ToolTipService.SetInitialShowDelay(Island, 250);
+        ToolTipService.SetShowDuration(Island, 30_000);
 
 
         // automatic detection: each provider reports the devices it finds (nothing to configure)
@@ -416,6 +418,7 @@ public partial class MainWindow : Window
         public readonly Border Root;
         public readonly DeviceKind Kind;
         public readonly string Name;
+        readonly ToolTip tip;
         readonly Rectangle body, cap, fill;
         readonly Path bolt, boltOutline;
         readonly SolidColorBrush fg, low;
@@ -444,7 +447,12 @@ public partial class MainWindow : Window
 
             var row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             row.Children.Add(icon); row.Children.Add(canvas);
-            Root = new Border { Height = 44, Padding = new Thickness(7, 0, 7, 0), CornerRadius = new CornerRadius(5), Child = row, Background = Brushes.Transparent, Opacity = 0.35, Tag = this, ToolTip = name };
+            // one persistent tooltip whose text is updated in place: replacing Root.ToolTip on every battery
+            // report (the X11 mouse reports every 2 s) closed the open tooltip almost immediately
+            tip = new ToolTip { Content = name };
+            Root = new Border { Height = 44, Padding = new Thickness(7, 0, 7, 0), CornerRadius = new CornerRadius(5), Child = row, Background = Brushes.Transparent, Opacity = 0.35, Tag = this, ToolTip = tip };
+            ToolTipService.SetInitialShowDelay(Root, 250);
+            ToolTipService.SetShowDuration(Root, 30_000); // stays while hovered (default is only 5 s)
         }
 
         public void Highlight(bool on)
@@ -467,7 +475,8 @@ public partial class MainWindow : Window
             string state = !online ? S.Asleep
                 : r!.Level == null ? S.ChargingCable
                 : $"{r.Level}%" + (r.Charging ? " · " + S.Charging : "");
-            Root.ToolTip = $"{Name} — {state}";
+            var text = $"{Name} — {state}";
+            if (!Equals(tip.Content, text)) tip.Content = text;
         }
     }
 
