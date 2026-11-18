@@ -9,6 +9,9 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // a downloaded exe installs / updates itself, then hands over to the installed copy
+        if (Core.Installer.Run()) { Shutdown(); return; }
+
         single = new Mutex(true, @"Local\TaskbarIsland", out bool first);
         if (!first) { Shutdown(); return; }
 

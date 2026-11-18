@@ -28,6 +28,18 @@ public static class S
     public static string StartWithWindows => Pt ? "Iniciar com o Windows" : "Start with Windows";
     public static string EditGames => Pt ? "Editar lista de jogos…" : "Edit game list…";
     public static string OpenFolder => Pt ? "Abrir pasta do programa" : "Open program folder";
+    public static string Installed => Pt
+        ? "Taskbar Island instalado! ✅\n\nEle já está na barra de tarefas, perto do relógio, e vai abrir sozinho sempre que o Windows ligar.\n\nPode apagar o arquivo que você baixou."
+        : "Taskbar Island installed! ✅\n\nIt's already on the taskbar, next to the clock, and will start with Windows.\n\nYou can delete the file you downloaded.";
+    public static string Updated(string v) => Pt
+        ? $"Taskbar Island atualizado para a versão {v}! ✅\n\nJá está rodando na barra de tarefas. Pode apagar o arquivo que você baixou."
+        : $"Taskbar Island updated to version {v}! ✅\n\nIt's already running on the taskbar. You can delete the file you downloaded.";
+    public static string NewerInstalled(string v) => Pt
+        ? $"Você já tem uma versão mais nova instalada ({v}). Ela continua aberta na barra de tarefas."
+        : $"A newer version ({v}) is already installed. It keeps running on the taskbar.";
+    public static string UpdateFailed(string why) => Pt
+        ? $"Não consegui instalar/atualizar o Taskbar Island.\n\nFeche o widget (botão direito → Sair) e tente de novo.\n\nDetalhe: {why}"
+        : $"Couldn't install/update Taskbar Island.\n\nQuit the widget (right-click → Quit) and try again.\n\nDetails: {why}";
     public static string Quit => Pt ? "Sair" : "Quit";
 
     public static string GamesFileHeader => Pt

@@ -57,27 +57,23 @@ Não precisa instalar mais nada antes: tudo que ele precisa já vem dentro do ar
 1. Abra a página de downloads: **[Releases → última versão](../../releases/latest)**.
 2. Em **Assets**, clique em **`TaskbarIsland-win-x64.zip`** (uns 60 MB).
 
-### Passo 2 — Tirar do zip e guardar num lugar fixo
+### Passo 2 — Tirar do zip
 
-1. Abra a pasta **Downloads**, clique com o **botão direito** no arquivo `TaskbarIsland-win-x64.zip` → **Extrair tudo…** → **Extrair**.
-2. Vai abrir uma pasta com o arquivo **`TaskbarIsland.exe`** dentro.
-3. **Mova essa pasta para um lugar onde ela vai ficar**, por exemplo **Documentos**. (Se você apagar ou mover o arquivo depois, ele para de abrir sozinho com o Windows.)
+Abra a pasta **Downloads**, clique com o **botão direito** no arquivo `TaskbarIsland-win-x64.zip` → **Extrair tudo…** → **Extrair**. Vai abrir uma pasta com o arquivo **`TaskbarIsland.exe`** dentro.
 
-> ❗ Não abra o programa **de dentro do .zip** (sem extrair) — não funciona direito.
+> ❗ Não abra o programa **de dentro do .zip** (sem extrair).
 
-### Passo 3 — Abrir
+### Passo 3 — Dois cliques
 
 1. Dê **dois cliques** em **`TaskbarIsland.exe`**.
 2. O Windows provavelmente vai mostrar uma tela azul **"O Windows protegeu o computador"**. Isso acontece com todo programa pequeno que não é de uma empresa grande (ele não tem "assinatura digital", que é paga). Para abrir:
    - clique em **Mais informações**;
    - depois em **Executar assim mesmo**.
+3. Aparece o aviso **"Taskbar Island instalado! ✅"**. Pronto!
 
-   Isso só aparece **na primeira vez**.
-3. Pronto! O widget aparece na barra de tarefas, **à esquerda do relógio**. Não abre janela nenhuma — é só isso mesmo. 🙂
+Ele **se instala sozinho** (numa pasta própria do Windows), aparece na barra de tarefas **à esquerda do relógio** e passa a **abrir sozinho toda vez que o Windows ligar**. Não abre janela nenhuma — é só isso mesmo. 🙂
 
-### Passo 4 — Nada! 
-
-Na primeira vez que abre, ele já se configura para **abrir sozinho toda vez que o Windows ligar**. Você não precisa fazer mais nada.
+Pode apagar o .zip e a pasta extraída depois.
 
 ---
 
@@ -162,24 +158,25 @@ Pronto, não precisa reiniciar o widget.
 
 ## 6. Atualizar
 
+Igual a instalar:
+
 1. Baixe a versão nova em **[Releases](../../releases/latest)** e extraia (botão direito no .zip → **Extrair tudo**).
-2. Botão direito no widget → **Abrir pasta do programa**. Abre a pasta onde ele está, com o `TaskbarIsland.exe` selecionado.
-3. Botão direito no widget → **Sair**.
-4. Copie o `TaskbarIsland.exe` novo e **cole na pasta que abriu**, substituindo o antigo (escolha **Substituir**).
-5. Abra o `TaskbarIsland.exe`.
+2. Dê **dois cliques** no `TaskbarIsland.exe` novo.
+3. Aparece **"Taskbar Island atualizado para a versão X! ✅"**. Pronto!
 
-Suas escolhas (cor, modo jogo, lista de jogos) não se perdem.
+Ele acha sozinho onde o widget está instalado, fecha a versão antiga, se coloca no lugar dela e abre de novo. Suas escolhas (cor, modo jogo, lista de jogos) não se perdem. Pode apagar o arquivo baixado depois.
 
-> Versão antiga, sem o item "Abrir pasta do programa"? Aperte **Ctrl + Shift + Esc** → aba **Detalhes** → botão direito em **TaskbarIsland.exe** → **Abrir local do arquivo**.
+> **Vindo da versão 1.1.2 ou mais antiga?** Essas ainda não tinham o atualizador. Nesse caso, faça uma vez do jeito manual: botão direito no widget → **Sair**; aperte **Ctrl + Shift + Esc** → aba **Detalhes**… (com o widget fechado, use a aba **Aplicativos de inicialização**) → botão direito em **TaskbarIsland** → **Abrir local do arquivo**; cole o `TaskbarIsland.exe` novo nessa pasta, escolhendo **Substituir**, e abra ele. Das próximas vezes, é só dar dois cliques.
 
 ---
 
 ## 7. Desinstalar
 
 1. Botão direito no widget → desmarque **Iniciar com o Windows**.
-2. Botão direito → **Sair**.
-3. Apague a pasta onde você guardou o `TaskbarIsland.exe`.
-4. (Opcional) Apague as configurações: aperte **Win + R**, cole `%APPDATA%\TaskbarIsland` e aperte Enter → apague essa pasta.
+2. Botão direito → **Abrir pasta do programa** (deixe essa pasta aberta).
+3. Botão direito no widget → **Sair**.
+4. Apague o `TaskbarIsland.exe` da pasta que abriu (normalmente `%LOCALAPPDATA%\Programs\TaskbarIsland`).
+5. (Opcional) Apague as configurações: aperte **Win + R**, cole `%APPDATA%\TaskbarIsland` e aperte Enter → apague essa pasta.
 
 ---
 
@@ -203,6 +200,7 @@ native/
     Core/Providers.cs   detecção automática: CompxProvider (AULA), XentaProvider (Attack Shark), GHubProvider (Logitech)
     Core/Spotify.cs     música via controles de mídia do Windows (só Spotify)
     Core/Win32.cs       barra de tarefas, tela cheia, iniciar com o Windows
+    Core/Installer.cs   o próprio .exe se instala / atualiza a cópia instalada (nunca rebaixa versão)
     Core/Strings.cs     textos PT/EN
     MainWindow.xaml(.cs) ilha (modos fechado/compacto/normal), baterias, modo jogo
     CardWindow.xaml(.cs) cartão expandido acima da barra

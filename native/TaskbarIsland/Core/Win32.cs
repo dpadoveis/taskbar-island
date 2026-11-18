@@ -116,11 +116,20 @@ public static partial class Win32
         return k?.GetValue(RunName) is string;
     }
 
-    public static void SetAutostart(bool on)
+    /// <summary>Exe path registered to start with Windows, if it still exists.</summary>
+    public static string? AutostartPath()
+    {
+        using var k = Registry.CurrentUser.OpenSubKey(RunKey);
+        if (k?.GetValue(RunName) is not string cmd) return null;
+        var path = cmd.Trim().Trim('"');
+        return File.Exists(path) ? path : null;
+    }
+
+    public static void SetAutostart(bool on, string? exePath = null)
     {
         using var k = Registry.CurrentUser.OpenSubKey(RunKey, writable: true);
         if (k == null) return;
-        if (on) k.SetValue(RunName, $"\"{Environment.ProcessPath}\"");
+        if (on) k.SetValue(RunName, $"\"{exePath ?? Environment.ProcessPath}\"");
         else k.DeleteValue(RunName, throwOnMissingValue: false);
     }
 }
