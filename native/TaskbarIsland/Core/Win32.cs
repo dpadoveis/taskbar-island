@@ -107,13 +107,46 @@ public static partial class Win32
     /// <summary>Hand our idle pages back to Windows (shows up as a much smaller "Memory" in Task Manager).</summary>
     public static void TrimWorkingSet() => EmptyWorkingSet(GetCurrentProcess());
 
-    // ---------- autostart (HKCU Run) ----------
+    // ---------- autostart (HKCU Run + the "approved" flag Task Manager uses) ----------
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run", RunName = "TaskbarIsland";
+    const string ApprovedKey = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+    // first byte 02 = enabled, 03 = disabled by the user in Task Manager; the rest is a timestamp (zero is fine)
+    static readonly byte[] Approved = [0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
+    /// <summary>null = no flag yet, true = enabled, false = disabled in Task Manager.</summary>
+    static bool? ApprovedState()
+    {
+        using var k = Registry.CurrentUser.OpenSubKey(ApprovedKey);
+        return k?.GetValue(RunName) is byte[] { Length: > 0 } b ? (b[0] & 1) == 0 : null;
+    }
+
+    static void SetApproved(bool on)
+    {
+        using var k = Registry.CurrentUser.CreateSubKey(ApprovedKey, writable: true);
+        if (on) k.SetValue(RunName, Approved, RegistryValueKind.Binary);
+        else k.DeleteValue(RunName, throwOnMissingValue: false);
+    }
+
+    /// <summary>Registered AND not disabled in Task Manager's Startup apps.</summary>
     public static bool AutostartEnabled()
     {
         using var k = Registry.CurrentUser.OpenSubKey(RunKey);
-        return k?.GetValue(RunName) is string;
+        return k?.GetValue(RunName) is string && ApprovedState() != false;
+    }
+
+    /// <summary>
+    /// Self-heal: some Windows 11 builds skipped our Run entry at logon while it had no StartupApproved flag
+    /// (apps that have the flag started fine). If autostart is on but the flag is missing, write "enabled".
+    /// Never overrides a user's "disabled" choice.
+    /// </summary>
+    public static void EnsureAutostartApproved()
+    {
+        try
+        {
+            using var k = Registry.CurrentUser.OpenSubKey(RunKey);
+            if (k?.GetValue(RunName) is string && ApprovedState() == null) SetApproved(true);
+        }
+        catch { }
     }
 
     /// <summary>Exe path registered to start with Windows, if it still exists.</summary>
@@ -131,5 +164,6 @@ public static partial class Win32
         if (k == null) return;
         if (on) k.SetValue(RunName, $"\"{exePath ?? Environment.ProcessPath}\"");
         else k.DeleteValue(RunName, throwOnMissingValue: false);
+        try { SetApproved(on); } catch { }
     }
 }
