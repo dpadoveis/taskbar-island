@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -82,8 +83,7 @@ public partial class MainWindow : Window
         SizeChanged += (_, _) => Place();
         ProgressTrack.SizeChanged += (_, _) => UpdateProgress(); // width springs between modes
         BuildMenu();
-        ToolTipService.SetInitialShowDelay(Island, 250);
-        ToolTipService.SetShowDuration(Island, 30_000);
+        BuildBubble();
 
 
         // automatic detection: each provider reports the devices it finds (nothing to configure)
@@ -287,14 +287,12 @@ public partial class MainWindow : Window
         {
             ArtCircle.Fill = new SolidColorBrush(Color.FromRgb(0x22, 0x22, 0x22));
             ArtGlyph.Visibility = Visibility.Visible;
-            Island.ToolTip = S.OpenSpotify;
             IslandBg.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(Accent.NeutralTint, TimeSpan.FromMilliseconds(400)));
             StopAnimations();
             card?.Collapse();
         }
         else
         {
-            Island.ToolTip = null;
             if (media != null && ArtGlyph.Visibility == Visibility.Visible && coverBrush != null) { ArtCircle.Fill = coverBrush; ArtGlyph.Visibility = Visibility.Collapsed; }
         }
     }
@@ -352,7 +350,17 @@ public partial class MainWindow : Window
         {
             onCard = card!.CardContains(c.X, c.Y); // the visible card only, not the transparent space above it
         }
-        foreach (var v in devices.Values) v.Highlight(inWindow && Contains(v.Root, p));
+        DeviceView? overDevice = null;
+        foreach (var v in devices.Values)
+        {
+            bool on = inWindow && Contains(v.Root, p);
+            v.Highlight(on);
+            if (on) overDevice = v;
+        }
+        // own hover bubble: battery details over a device, "open Spotify" over the closed island
+        if (overDevice != null) ShowBubble(overDevice.Root, overDevice.TipText);
+        else if (onIsland && mode == Mode.Closed) ShowBubble(Island, S.OpenSpotify);
+        else HideBubble();
 
         if (onIsland && !hoverIsland) hoverStarted = DateTime.Now;
         if (hoverIsland || hoverCard) if (!onIsland && !onCard) hoverEnded = DateTime.Now;
@@ -380,6 +388,47 @@ public partial class MainWindow : Window
         double s = VisualTreeHelper.GetDpi(this).DpiScaleX;
         var islandCenter = Island.TransformToAncestor(this).Transform(new Point(Island.ActualWidth / 2, 0));
         card.ShowAt(Left + islandCenter.X, tb.Value.Top / s + 4, SystemParameters.WorkArea);
+    }
+
+    // ---- hover bubble (replaces WPF tooltips, which the 1 s topmost refresh kept closing) ----
+    readonly Popup bubble = new()
+    {
+        AllowsTransparency = true, Placement = PlacementMode.Top, StaysOpen = true,
+        PopupAnimation = PopupAnimation.Fade, VerticalOffset = -4,
+    };
+    readonly TextBlock bubbleText = new() { FontSize = 12, Foreground = Brushes.White };
+    UIElement? bubbleOver;
+    DateTime bubbleSince;
+
+    void BuildBubble()
+    {
+        bubble.Child = new Border
+        {
+            Background = new SolidColorBrush(Color.FromRgb(0x2B, 0x2B, 0x2B)), BorderThickness = new Thickness(1),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(0x26, 255, 255, 255)), CornerRadius = new CornerRadius(6),
+            Padding = new Thickness(9, 5, 9, 6), Child = bubbleText, IsHitTestVisible = false,
+        };
+        TextOptions.SetTextFormattingMode(bubble.Child, TextFormattingMode.Display);
+    }
+
+    /// <summary>Shows after a short dwell, then stays as long as the cursor is over the element.</summary>
+    void ShowBubble(UIElement over, string text)
+    {
+        if (!ReferenceEquals(over, bubbleOver)) { bubbleOver = over; bubbleSince = DateTime.Now; bubble.IsOpen = false; }
+        if (!Equals(bubbleText.Text, text)) bubbleText.Text = text;
+        if (!bubble.IsOpen && (DateTime.Now - bubbleSince).TotalMilliseconds >= 250)
+        {
+            bubble.PlacementTarget = over;
+            bubble.Child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            bubble.HorizontalOffset = Math.Round((over.RenderSize.Width - bubble.Child.DesiredSize.Width) / 2); // centred
+            bubble.IsOpen = true;
+        }
+    }
+
+    void HideBubble()
+    {
+        bubbleOver = null;
+        if (bubble.IsOpen) bubble.IsOpen = false;
     }
 
     void EnsureCard()
@@ -418,7 +467,7 @@ public partial class MainWindow : Window
         public readonly Border Root;
         public readonly DeviceKind Kind;
         public readonly string Name;
-        readonly ToolTip tip;
+        public string TipText { get; private set; }
         readonly Rectangle body, cap, fill;
         readonly Path bolt, boltOutline;
         readonly SolidColorBrush fg, low;
@@ -447,12 +496,9 @@ public partial class MainWindow : Window
 
             var row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             row.Children.Add(icon); row.Children.Add(canvas);
-            // one persistent tooltip whose text is updated in place: replacing Root.ToolTip on every battery
-            // report (the X11 mouse reports every 2 s) closed the open tooltip almost immediately
-            tip = new ToolTip { Content = name };
-            Root = new Border { Height = 44, Padding = new Thickness(7, 0, 7, 0), CornerRadius = new CornerRadius(5), Child = row, Background = Brushes.Transparent, Opacity = 0.35, Tag = this, ToolTip = tip };
-            ToolTipService.SetInitialShowDelay(Root, 250);
-            ToolTipService.SetShowDuration(Root, 30_000); // stays while hovered (default is only 5 s)
+            // text shown by the widget's own hover bubble (see PollHover); WPF tooltips kept closing early
+            TipText = name;
+            Root = new Border { Height = 44, Padding = new Thickness(7, 0, 7, 0), CornerRadius = new CornerRadius(5), Child = row, Background = Brushes.Transparent, Opacity = 0.35, Tag = this };
         }
 
         public void Highlight(bool on)
@@ -475,8 +521,7 @@ public partial class MainWindow : Window
             string state = !online ? S.Asleep
                 : r!.Level == null ? S.ChargingCable
                 : $"{r.Level}%" + (r.Charging ? " · " + S.Charging : "");
-            var text = $"{Name} — {state}";
-            if (!Equals(tip.Content, text)) tip.Content = text;
+            TipText = $"{Name} — {state}";
         }
     }
 
@@ -531,6 +576,7 @@ public partial class MainWindow : Window
     void EnterGameMode()
     {
         inGame = true;
+        HideBubble();
         card?.Collapse(instant: true);
         Hide();
         StopAnimations();
