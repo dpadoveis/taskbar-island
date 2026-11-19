@@ -4,7 +4,7 @@
         Title="TaskbarIslandCard" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True" ShowActivated="False"
         SizeToContent="Width" UseLayoutRounding="True" SnapsToDevicePixels="True"
-        TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="Grayscale"
+        TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="Grayscale"
         FontFamily="{StaticResource TextFont}" Foreground="White">
 
   <!-- fully transparent around the card: those pixels click through. The window is sized for the open settings,
