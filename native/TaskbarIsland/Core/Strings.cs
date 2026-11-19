@@ -14,7 +14,9 @@ public static class S
     public static string PlayPause => Pt ? "Tocar/Pausar" : "Play/Pause";
     public static string Next => Pt ? "Próxima" : "Next";
     public static string GameMode => Pt ? "Modo jogo" : "Game mode";
-    public static string GameModeTip => Pt ? "Ligado: o widget some em jogos de tela cheia e libera memória" : "On: the widget hides in fullscreen games and frees memory";
+    public static string GameModeTip => Pt
+        ? "Em tela cheia o widget sempre some. Ligado: ele também libera memória e some nos jogos da sua lista"
+        : "The widget always hides in fullscreen. On: it also frees memory and hides for games on your list";
     public static string Color => Pt ? "Cor" : "Colour";
     public static string SettingsTip => Pt ? "Configurações" : "Settings";
     public static string ColorAuto => Pt ? "Cor da capa (automático)" : "Cover colour (automatic)";

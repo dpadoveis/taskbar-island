@@ -78,6 +78,7 @@ public partial class MainWindow : Window
         // hover is polled from the real cursor position: enter/leave events are unreliable on a
         // window that never activates (a highlight could get stuck)
         new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Input, (_, _) => PollHover(), Dispatcher).Start();
+        new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) => PollFullscreen(), Dispatcher).Start();
         Island.MouseWheel += (_, e) => { if (media != null) spotify!.Command(e.Delta < 0 ? "next" : "prev"); };
         Art.MouseLeftButtonUp += (_, _) => { if (media == null) OpenSpotify(); else spotify!.Command("toggle"); };
         SizeChanged += (_, _) => Place();
@@ -553,12 +554,13 @@ public partial class MainWindow : Window
         if (ticks % 10 == 0) LoadGames();
         if (ticks % 15 == 0) { bool l = Win32.TaskbarIsLight(); if (l != light) ApplyTheme(l); }
 
-        // game mode: fullscreen app, or a listed game in the foreground (catches borderless windows)
-        bool gameNow = settings.GameMode
-            && (Win32.FullscreenAppRunning() || (games.Count > 0 && games.Contains(Win32.ForegroundExe())));
-        gameStreak = gameNow != inGame ? gameStreak + 1 : 0;
-        if (gameStreak >= 2) { gameStreak = 0; if (gameNow) EnterGameMode(); else ExitGameMode(); }
-        if (inGame) return;
+        // hidden (fullscreen / taskbar hidden / listed game): come back only after 2 calm seconds (no flicker)
+        if (inGame)
+        {
+            gameStreak = ShouldHide() ? 0 : gameStreak + 1;
+            if (gameStreak >= 2) { gameStreak = 0; ExitGameMode(); }
+            return;
+        }
 
         if (hwnd != IntPtr.Zero)
         {
@@ -574,6 +576,22 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// The taskbar isn't really there, so the widget must not float over the screen: anything fullscreen
+    /// (video in a browser, games, presentations), an auto-hidden taskbar, or a game from the list (game mode on).
+    /// </summary>
+    bool ShouldHide() =>
+        Win32.FullscreenAppRunning()
+        || Win32.ForegroundCoversMonitor(hwnd)
+        || Win32.TaskbarHidden()
+        || (settings.GameMode && games.Count > 0 && games.Contains(Win32.ForegroundExe()));
+
+    /// <summary>Fast check (every 250 ms) so going fullscreen hides the widget almost at once.</summary>
+    void PollFullscreen()
+    {
+        if (!inGame && hwnd != IntPtr.Zero && ShouldHide()) { gameStreak = 0; EnterGameMode(); }
+    }
+
     void EnterGameMode()
     {
         inGame = true;
@@ -581,6 +599,7 @@ public partial class MainWindow : Window
         card?.Collapse(instant: true);
         Hide();
         StopAnimations();
+        if (!settings.GameMode) return; // just hide; "game mode" additionally frees the memory
         ArtCircle.Fill = null;
         GC.Collect(2, GCCollectionMode.Forced, true, true);
         GC.WaitForPendingFinalizers();

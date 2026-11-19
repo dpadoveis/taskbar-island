@@ -78,6 +78,45 @@ public static partial class Win32
     public static void ForceTopmost(IntPtr hwnd) =>
         SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
+    [StructLayout(LayoutKind.Sequential)]
+    struct MONITORINFO { public int cbSize; public RECT rcMonitor, rcWork; public uint dwFlags; }
+    [DllImport("user32.dll")] static extern IntPtr MonitorFromWindow(IntPtr h, uint flags);
+    [DllImport("user32.dll")] static extern bool GetMonitorInfoW(IntPtr mon, ref MONITORINFO mi);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassNameW(IntPtr h, StringBuilder sb, int n);
+    [DllImport("user32.dll")] static extern IntPtr GetShellWindow();
+    [DllImport("user32.dll")] static extern IntPtr GetDesktopWindow();
+
+    static RECT? MonitorRect(IntPtr h)
+    {
+        var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+        return GetMonitorInfoW(MonitorFromWindow(h, 2 /*NEAREST*/), ref mi) ? mi.rcMonitor : null;
+    }
+
+    /// <summary>
+    /// The window in front covers its whole monitor (fullscreen video in a browser, borderless games, players...).
+    /// A merely maximised window doesn't count: it leaves the taskbar visible.
+    /// </summary>
+    public static bool ForegroundCoversMonitor(IntPtr self)
+    {
+        var h = GetForegroundWindow();
+        if (h == IntPtr.Zero || h == self || h == GetShellWindow() || h == GetDesktopWindow()) return false;
+        var cls = new StringBuilder(64);
+        GetClassNameW(h, cls, cls.Capacity);
+        if (cls.ToString() is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd") return false;
+        if (!GetWindowRect(h, out var r) || MonitorRect(h) is not RECT m) return false;
+        return r.Left <= m.Left && r.Top <= m.Top && r.Right >= m.Right && r.Bottom >= m.Bottom;
+    }
+
+    /// <summary>The taskbar is (auto-)hidden: less than a few pixels of it are on screen.</summary>
+    public static bool TaskbarHidden()
+    {
+        var tray = TrayHwnd();
+        if (tray == IntPtr.Zero || !GetWindowRect(tray, out var r) || MonitorRect(tray) is not RECT m) return false;
+        int w = Math.Min(r.Right, m.Right) - Math.Max(r.Left, m.Left);
+        int h = Math.Min(r.Bottom, m.Bottom) - Math.Max(r.Top, m.Top);
+        return w <= 0 || h <= 0 || Math.Min(w, h) < 6;
+    }
+
     /// <summary>Fullscreen app/game, D3D exclusive fullscreen or presentation mode.</summary>
     public static bool FullscreenAppRunning() =>
         SHQueryUserNotificationState(out int s) == 0 && s is 2 or 3 or 4;
