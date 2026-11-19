@@ -28,6 +28,9 @@ public static class S
     public static string Repeat => Pt ? "Repetir" : "Repeat";
     public static string Asleep => Pt ? "dormindo ou desligado" : "asleep or off";
     public static string ChargingCable => Pt ? "carregando pelo cabo" : "charging (cable)";
+    public static string MchoseNoAnswer => Pt
+        ? "Sem resposta. Ligue o fone; se continuar, atualize o firmware do receptor no MCHOSE HUB."
+        : "No answer. Turn the headset on; if it persists, update the receiver firmware in MCHOSE HUB.";
     public static string Charging => Pt ? "carregando" : "charging";
     public static string StartWithWindows => Pt ? "Iniciar com o Windows" : "Start with Windows";
     public static string EditGames => Pt ? "Editar lista de jogos…" : "Edit game list…";

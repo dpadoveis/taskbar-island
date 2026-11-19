@@ -9,7 +9,7 @@ Um widget discreto para a **barra de tarefas do Windows 11** que mostra, ao lado
 
 Ele **acha seus aparelhos sozinho**: não tem nada para configurar. Só aparece o que você tem. Sem Spotify aberto, a parte da música some; aparelho que não foi encontrado não aparece.
 
-> 🇺🇸 **English:** a small Windows 11 taskbar widget showing the Spotify track and the battery of 2.4 GHz wireless peripherals (AULA keyboards, Attack Shark mice, any Logitech device through G HUB). Auto-detects devices, no setup. Download `TaskbarIsland-win-x64.zip` from [Releases](../../releases/latest), extract, run `TaskbarIsland.exe`. The UI follows the Windows language (Portuguese or English).
+> 🇺🇸 **English:** a small Windows 11 taskbar widget showing the Spotify track and the battery of 2.4 GHz wireless peripherals (AULA keyboards, Attack Shark mice, Logitech straight from the receiver or through G HUB, MCHOSE, Delux, VXE). Auto-detects devices, no setup. Download `TaskbarIsland-win-x64.zip` from [Releases](../../releases/latest), extract, run `TaskbarIsland.exe`. The UI follows the Windows language (Portuguese or English).
 
 ---
 
@@ -36,9 +36,12 @@ Ele **acha seus aparelhos sozinho**: não tem nada para configurar. Só aparece 
 | **Teclado AULA F75** pelo receptor 2.4 GHz | direto pelo receptor (chip "Compx") | ✅ testado |
 | Outros **teclados AULA** com receptor 2.4 GHz (F87, F99, F65…) | mesmo receptor do F75 | ⚠️ deve funcionar, não testado |
 | **Mouse Attack Shark X11** pelo receptor 2.4 GHz | direto pelo receptor | ✅ testado |
-| **Qualquer aparelho Logitech com bateria** (fone, mouse, teclado) | pelo programa **Logitech G HUB** | ✅ testado com o fone G522 |
+| **Fones Logitech novos** (G522 e parecidos) pelo receptor 2.4 GHz | direto pelo receptor, **sem precisar do G HUB** | ✅ testado com o G522 |
+| **Mouses e teclados Logitech** (receptor Lightspeed, Unifying ou Bolt) | direto pelo receptor, **sem precisar do G HUB** | ⚠️ deve funcionar, ainda não testado aqui |
+| **Qualquer aparelho Logitech com bateria** | pelo **G HUB**, quando ele estiver aberto | ✅ testado com o fone G522 |
 | **Fone MCHOSE V9 Pro** pelo receptor 2.4 GHz | direto pelo receptor (só o pedido de bateria) | ⚠️ deve funcionar, ainda não testado aqui |
 | **Mouse Delux M800 Pro** pelo receptor 2.4 GHz | direto pelo receptor (só leitura) | ⚠️ deve funcionar, ainda não testado aqui |
+| **Mouse VXE Dragonfly R1** (R1, R1 Pro, R1 SE+) e Pulsar pelo receptor 2.4 GHz | direto pelo receptor (só leitura) | ⚠️ deve funcionar, ainda não testado aqui |
 
 > ⚠️ = o protocolo veio de outros projetos que testaram com o aparelho de verdade (veja [Créditos](#10-créditos)), mas ainda ninguém confirmou com este widget. Se você tem um desses e funcionou (ou não), conta pra gente numa [issue](../../issues).
 
@@ -46,7 +49,7 @@ Ele **acha seus aparelhos sozinho**: não tem nada para configurar. Só aparece 
 
 - O aparelho precisa estar no **modo 2.4 GHz** (com o receptor USB / dongle plugado). No **cabo** ou no **Bluetooth** a porcentagem não aparece.
 - Teclado AULA **carregando pelo cabo** mostra só o raio ⚡ (o próprio teclado não informa a porcentagem nesse modo).
-- Aparelhos **Logitech** só aparecem se o **G HUB** estiver instalado e aberto (ele já abre com o Windows normalmente).
+- Aparelhos **Logitech** não precisam mais do **G HUB**. Se ele estiver aberto, o widget usa os dados dele; se não, lê direto do receptor.
 - A música é **só do Spotify** — de propósito, para não ficar mostrando vídeo do YouTube etc.
 - Precisa de **Windows 10 ou 11, 64 bits**. Feito pensando no Windows 11 (barra de tarefas embaixo).
 
@@ -151,7 +154,11 @@ Pronto, não precisa reiniciar o widget.
 - Se for outra marca/modelo que não está na [tabela](#1-o-que-funciona-com-ele), provavelmente ainda não é compatível.
 
 **Meu aparelho Logitech não aparece.**
-- O **G HUB** tem que estar aberto (ícone perto do relógio). Se estiver e mesmo assim não aparecer, feche o G HUB e abra de novo.
+- Ligue o aparelho e espere até 1 minuto. Se ainda assim não aparecer, abra o **G HUB** (ícone perto do relógio): alguns modelos só informam a bateria por ele.
+
+**Meu fone MCHOSE V9 Pro aparece, mas sem porcentagem.**
+- Ligue o fone e espere até 1 minuto.
+- Se continuar sem número, o receptor provavelmente está com o firmware de fábrica, que não informa bateria. Atualize o firmware **do receptor e do fone** pelo aplicativo/site oficial da MCHOSE (MCHOSE HUB) e abra o widget de novo.
 
 **O widget ficou em cima dos ícones fixados da barra.**
 - Acontece se você tem **muitos programas fixados** na barra e eles chegam até o canto direito. Desafixe alguns ou deixe os ícones da barra **à esquerda** (Configurações → Personalização → Barra de tarefas → Comportamentos → Alinhamento).
@@ -190,7 +197,7 @@ Ele acha sozinho onde o widget está instalado, fecha a versão antiga, se coloc
 - **Não usa internet** e não coleta nada. Só conversa com coisas do próprio computador: os receptores USB, o G HUB e os controles de mídia do Windows.
 - O **mouse Attack Shark nunca recebe nenhum comando** — o widget só "escuta" o que o receptor já manda sozinho.
 - O **teclado AULA recebe só um pedido de bateria** a cada 1 minuto (o mesmo que o programa oficial da AULA usa). Nenhuma configuração do teclado é alterada.
-- O **fone MCHOSE** recebe só o pedido de bateria documentado, e o **mouse Delux** só uma consulta de leitura. Os comandos de configuração desses aparelhos (EQ, DPI, pareamento etc.) nunca são enviados.
+- O **fone MCHOSE** recebe só o pedido de bateria documentado, e os **mouses Delux e VXE** só consultas de leitura. Os comandos de configuração desses aparelhos (EQ, DPI, pareamento etc.) nunca são enviados.
 - Não precisa rodar como administrador.
 
 ---
@@ -204,7 +211,8 @@ native/
   TaskbarIsland/
     Core/Protocols.cs   protocolos de bateria (parsers puros, testados)
     Core/Providers.cs   detecção automática: CompxProvider (AULA), XentaProvider (Attack Shark), GHubProvider (Logitech),
-                        MchoseProvider (MCHOSE V9 Pro), DeluxProvider (Delux M800 Pro)
+                        MchoseProvider (MCHOSE V9 Pro), DeluxProvider (Delux M800 Pro), VxeProvider (VXE / Pulsar)
+    Core/Logitech.cs    LogitechProvider: Logitech direto do receptor (Centurion e HID++) enquanto o G HUB está fechado
     Core/Spotify.cs     música via controles de mídia do Windows (só Spotify)
     Core/Win32.cs       barra de tarefas, tela cheia, iniciar com o Windows
     Core/Installer.cs   o próprio .exe se instala / atualiza a cópia instalada (nunca rebaixa versão)
@@ -235,7 +243,9 @@ Os protocolos de bateria foram aprendidos com o trabalho de engenharia reversa d
 - AULA / Compx: [PyFlat/Device-Battery-Info#6](https://github.com/PyFlat/Device-Battery-Info/pull/6), [ushineko/sanshoku#36](https://github.com/ushineko/sanshoku/issues/36)
 - Attack Shark X11: [KaiSta/attackSharkOnLinux](https://github.com/KaiSta/attackSharkOnLinux), [HarukaYamamoto0/attack-shark-x11-driver](https://github.com/HarukaYamamoto0/attack-shark-x11-driver)
 - Logitech G HUB: [andyvorld/LGSTrayBattery](https://github.com/andyvorld/LGSTrayBattery)
+- Logitech direto (Centurion e HID++): [Sapd/HeadsetControl](https://github.com/Sapd/HeadsetControl), [pwr-Solaar/Solaar](https://github.com/pwr-Solaar/Solaar)
 - MCHOSE V9 Pro: [NicolasBonnefont/mchose-v9](https://github.com/NicolasBonnefont/mchose-v9), [JoaoKSS/MCHOSE_v9_PRO_Controller](https://github.com/JoaoKSS/MCHOSE_v9_PRO_Controller), [PyFlat/Device-Battery-Info#24](https://github.com/PyFlat/Device-Battery-Info/issues/24)
+- VXE / ATK / Pulsar: driver Linux "HID: pulsar" (Nikolas Koesling), baseado em [andrewrabert/python-pulsar-mouse-tool](https://github.com/andrewrabert/python-pulsar-mouse-tool)
 - Delux M800 Pro: [krisgfx9/Wireless-Device-Battery-Monitor#156](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor/pull/156), [xb-bx/m800-pro-driver](https://github.com/xb-bx/m800-pro-driver)
 
 Fonte da parte do Spotify: [Figtree](https://github.com/erikdkennedy/figtree) (© The Figtree Project Authors, [SIL Open Font License 1.1](native/TaskbarIsland/Fonts/OFL.txt)), embutida no app. A fonte oficial do Spotify é proprietária e não pode ser distribuída; a Figtree é a alternativa livre mais parecida.

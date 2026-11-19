@@ -95,6 +95,8 @@ public partial class MainWindow : Window
         new GHubProvider(sink).Start(cts.Token);    // any Logitech device with a battery, via G HUB
         new MchoseProvider(sink).Start(cts.Token);  // MCHOSE V9 PRO headset
         new DeluxProvider(sink).Start(cts.Token);   // Delux M800 Pro mouse
+        new VxeProvider(sink).Start(cts.Token);     // VXE Dragonfly R1 / ATK / Pulsar mice
+        new LogitechProvider(sink).Start(cts.Token); // Logitech straight from the receiver while G HUB is closed
         spotify = new SpotifySource(m => Dispatcher.BeginInvoke(() => OnMedia(m)));
         spotify.Start(cts.Token);
 
@@ -151,7 +153,7 @@ public partial class MainWindow : Window
             }
             Batteries.Children.Insert(at, v.Root);
         }
-        v.Set(s.Battery);
+        v.Set(s.Battery, s.Hint);
     }
 
     void OnDeviceRemoved(string id)
@@ -521,7 +523,7 @@ public partial class MainWindow : Window
             Root.Background = on ? HoverBrush : Brushes.Transparent;
         }
 
-        public void Set(BatteryReading? r)
+        public void Set(BatteryReading? r, string? hint = null)
         {
             bool online = r != null;
             double lvl = !online ? 0 : r!.Level is int l ? l / 100.0 : (r.Charging ? 1 : 0);
@@ -534,7 +536,7 @@ public partial class MainWindow : Window
             string state = !online ? S.Asleep
                 : r!.Level == null ? S.ChargingCable
                 : $"{r.Level}%" + (r.Charging ? " · " + S.Charging : "");
-            TipText = $"{Name} — {state}";
+            TipText = $"{Name} — {state}" + (!online && hint != null ? "\n" + hint : "");
         }
     }
 

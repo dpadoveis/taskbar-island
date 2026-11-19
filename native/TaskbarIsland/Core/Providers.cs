@@ -108,8 +108,9 @@ public abstract class PolledProvider(IDeviceSink sink, string name)
     /// <summary>The device collections to query, with id / kind / display name for each.</summary>
     protected abstract IEnumerable<(HidDevice Dev, string Id, DeviceKind Kind, string Name)> Find();
 
-    /// <summary>Ask one device; null = no valid answer right now.</summary>
-    protected abstract BatteryReading? Query(HidDevice dev);
+    /// <summary>Ask one device; null = no battery reading right now. <paramref name="known"/> = the device is
+    /// certainly ours (it answered our protocol, or its IDs are unique), so it is shown even while asleep.</summary>
+    protected abstract BatteryReading? Query(HidDevice dev, out bool known);
 
     void Scan()
     {
@@ -118,12 +119,16 @@ public abstract class PolledProvider(IDeviceSink sink, string name)
         {
             present.Add(id);
             BatteryReading? r = null;
-            try { r = Query(dev); } catch { }
-            if (r != null) seen.Add(id);
-            if (seen.Contains(id)) sink.Report(new DeviceState(id, kind, devName, r));
+            bool known = false;
+            try { r = Query(dev, out known); } catch { }
+            if (r != null || known) seen.Add(id);
+            if (seen.Contains(id)) sink.Report(new DeviceState(id, kind, devName, r, r == null ? HintFor(id) : null));
         }
         foreach (var gone in seen.Where(id => !present.Contains(id)).ToList()) { seen.Remove(gone); sink.Remove(gone); }
     }
+
+    /// <summary>Advice for a device that has no reading right now.</summary>
+    protected virtual string? HintFor(string id) => null;
 }
 
 /// <summary>
@@ -133,12 +138,17 @@ public abstract class PolledProvider(IDeviceSink sink, string name)
 public sealed class MchoseProvider(IDeviceSink sink) : PolledProvider(sink, "mchose")
 {
     protected override IEnumerable<(HidDevice, string, DeviceKind, string)> Find() =>
-        Hid.FindAll(Protocols.MchoseVid, Protocols.MchosePid, Protocols.MchoseUsagePage, Protocols.MchoseUsage)
+        Hid.FindAll(Protocols.MchoseVid, Protocols.MchosePid, Protocols.MchoseUsagePage)
+           .Where(d => d.GetMaxOutputReportLength() >= 3)
            .Select(d => (d, $"mchose:{d.DevicePath.GetHashCode():x8}", DeviceKind.Headset, Hid.ProductName(d, "MCHOSE V9 Pro")));
 
-    protected override BatteryReading? Query(HidDevice dev)
+    protected override BatteryReading? Query(HidDevice dev, out bool known)
     {
+        // The dongle's IDs are MCHOSE-only, so it is shown even when it never answers (headset off, or the
+        // shipped dongle firmware 0004 that has no battery telemetry until updated in the MCHOSE app).
+        known = true;
         if (!dev.TryOpen(out HidStream s)) return null;
+        string id = $"mchose:{dev.DevicePath.GetHashCode():x8}";
         using (s)
         {
             s.Write(Protocols.MchoseRequest(dev.GetMaxOutputReportLength()));
@@ -151,12 +161,90 @@ public sealed class MchoseProvider(IDeviceSink sink) : PolledProvider(sink, "mch
                 {
                     int n = s.Read(buf, 0, buf.Length);
                     var r = Protocols.ParseMchose(buf.AsSpan(0, n), out bool battery);
-                    if (battery) return r; // media-key / other frames on the same interface are skipped
+                    if (battery) { answered.Add(id); return r; } // media-key / other frames on the same interface are skipped
                 }
                 catch (TimeoutException) { }
             }
         }
         return null; // headset off: no answer
+    }
+
+    // Never answered since the app started: headset off, or a receiver firmware without battery telemetry.
+    readonly HashSet<string> answered = new();
+    protected override string? HintFor(string id) => answered.Contains(id) ? null : S.MchoseNoAnswer;
+}
+
+/// <summary>
+/// VXE / ATK / Pulsar mice on Kysona-protocol dongles (VXE Dragonfly R1 / R1 Pro / R1 SE+, Pulsar X2 ...).
+/// Collections with 17-byte input+output reports on VID 3554 (PIDs F5xx) or 373B. Only the read-only STATUS and
+/// POWER queries are sent, and a collection only shows up after it answered with a valid checksum.
+/// </summary>
+public sealed class VxeProvider(IDeviceSink sink) : PolledProvider(sink, "vxe")
+{
+    static readonly Dictionary<int, string> Known = new()
+    {
+        [0xF58A] = "VXE Dragonfly R1 Pro", [0xF58C] = "VXE Dragonfly R1 Pro",
+        [0xF58F] = "VXE R1 SE+", [0x1085] = "VXE R1 SE+",
+        [0xF507] = "Pulsar", [0xF508] = "Pulsar", [0xF509] = "Pulsar",
+    };
+
+    protected override IEnumerable<(HidDevice, string, DeviceKind, string)> Find() =>
+        DeviceList.Local.GetHidDevices(Protocols.VxeVid).Where(d => (d.ProductID & 0xFF00) == 0xF500)
+           .Concat(DeviceList.Local.GetHidDevices(Protocols.AtkVid))
+           .Where(d => SafeLen(d))
+           .Select(d => (d, $"vxe:{d.VendorID:x4}:{d.ProductID:x4}:{d.DevicePath.GetHashCode():x8}", DeviceKind.Mouse, NameOf(d)));
+
+    static bool SafeLen(HidDevice d)
+    {
+        try { return d.GetMaxOutputReportLength() == Protocols.VxeLen && d.GetMaxInputReportLength() == Protocols.VxeLen; }
+        catch { return false; }
+    }
+
+    static string NameOf(HidDevice d)
+    {
+        var fallback = Known.TryGetValue(d.ProductID, out var k) ? k : "VXE";
+        var n = Hid.ProductName(d, fallback);
+        return n.Contains("receiver", StringComparison.OrdinalIgnoreCase) || n.Contains("dongle", StringComparison.OrdinalIgnoreCase) ? fallback : n;
+    }
+
+    protected override BatteryReading? Query(HidDevice dev, out bool known)
+    {
+        known = false;
+        if (!dev.TryOpen(out HidStream s)) return null;
+        using (s)
+        {
+            var status = Ask(dev, s, Protocols.VxeCmdStatus);
+            if (status == null) return null;
+            bool? linked = Protocols.ParseVxeStatus(status);
+            known = linked != null;
+            if (linked != true) return null; // mouse off / asleep
+            var power = Ask(dev, s, Protocols.VxeCmdPower);
+            return power == null ? null : Protocols.ParseVxePower(power);
+        }
+    }
+
+    /// <summary>Sends one command and waits for the reply that echoes it (other input frames are skipped).</summary>
+    static byte[]? Ask(HidDevice dev, HidStream s, byte cmd)
+    {
+        var buf = new byte[64];
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            // The dongle listens on the control pipe (SET_REPORT), like the Linux driver does; plain write as fallback.
+            var req = Protocols.VxeRequest(cmd);
+            if (!Hid.SetOutputReport(dev, req)) s.Write(req);
+            var deadline = Environment.TickCount64 + 600;
+            s.ReadTimeout = 200;
+            while (Environment.TickCount64 < deadline)
+            {
+                try
+                {
+                    int n = s.Read(buf, 0, buf.Length);
+                    if (Protocols.IsVxeReply(buf.AsSpan(0, n), cmd)) return buf[..n];
+                }
+                catch (TimeoutException) { }
+            }
+        }
+        return null;
     }
 }
 
@@ -174,8 +262,9 @@ public sealed class DeluxProvider(IDeviceSink sink) : PolledProvider(sink, "delu
            .Where(d => d.GetMaxFeatureReportLength() >= 33)
            .Select(d => (d, $"delux:{d.ProductID:x4}", DeviceKind.Mouse, Known[d.ProductID]));
 
-    protected override BatteryReading? Query(HidDevice dev)
+    protected override BatteryReading? Query(HidDevice dev, out bool known)
     {
+        known = false;
         if (!dev.TryOpen(out HidStream s)) return null;
         using (s)
         {
@@ -256,7 +345,10 @@ public sealed class GHubProvider(IDeviceSink sink)
 {
     readonly Dictionary<string, (DeviceKind Kind, string Name)> devices = new();
 
-    public void Start(CancellationToken ct) => Task.Run(() => Run(ct));
+    public void Start(CancellationToken ct)
+    {
+        if (Environment.GetEnvironmentVariable("TI_NO_GHUB") == null) Task.Run(() => Run(ct)); // test hook: act as if G HUB were closed
+    }
 
     static DeviceKind KindOf(string type)
     {
@@ -265,6 +357,16 @@ public sealed class GHubProvider(IDeviceSink sink)
         if (type.Contains("mouse")) return DeviceKind.Mouse;
         if (type.Contains("keyboard")) return DeviceKind.Keyboard;
         return DeviceKind.Other;
+    }
+
+    /// <summary>True while G HUB's local API is reachable; the direct Logitech reader stands down meanwhile.</summary>
+    public static volatile bool Connected;
+    public static event Action? ConnectionChanged;
+    static void SetConnected(bool on)
+    {
+        if (Connected == on) return;
+        Connected = on;
+        ConnectionChanged?.Invoke();
     }
 
     void RemoveAll()
@@ -283,6 +385,7 @@ public sealed class GHubProvider(IDeviceSink sink)
                 ws.Options.AddSubProtocol("json");
                 ws.Options.SetRequestHeader("Origin", "file://");
                 await ws.ConnectAsync(new Uri("ws://localhost:9010"), ct);
+                SetConnected(true);
                 var sendLock = new SemaphoreSlim(1, 1);
                 async Task Send(string verb, string path)
                 {
@@ -359,6 +462,7 @@ public sealed class GHubProvider(IDeviceSink sink)
             }
             catch when (!ct.IsCancellationRequested) { }
             catch { return; }
+            SetConnected(false);
             RemoveAll(); // G HUB closed: its devices disappear from the widget
             try { await Task.Delay(15_000, ct); } catch { return; }
         }

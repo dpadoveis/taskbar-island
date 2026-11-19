@@ -1,11 +1,14 @@
+using System.Runtime.InteropServices;
 using HidSharp;
+using Microsoft.Win32.SafeHandles;
 
 namespace TaskbarIsland.Core;
 
 public enum DeviceKind { Keyboard, Mouse, Headset, Other }
 
 /// <summary>A detected device. Battery == null means "known but asleep / not answering right now".</summary>
-public sealed record DeviceState(string Id, DeviceKind Kind, string Name, BatteryReading? Battery);
+/// <param name="Hint">optional advice shown in the bubble while there is no reading (e.g. "update the firmware").</param>
+public sealed record DeviceState(string Id, DeviceKind Kind, string Name, BatteryReading? Battery, string? Hint = null);
 
 /// <summary>Where providers report what they find. Called from background threads.</summary>
 public interface IDeviceSink
@@ -32,6 +35,19 @@ static class Hid
             next:;
         }
         return found;
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    static extern SafeFileHandle CreateFileW(string name, uint access, uint share, IntPtr sec, uint disposition, uint flags, IntPtr template);
+    [DllImport("hid.dll", SetLastError = true)]
+    static extern bool HidD_SetOutputReport(SafeFileHandle h, byte[] report, int length);
+
+    /// <summary>Sends an output report over the control pipe (SET_REPORT), for devices that ignore
+    /// interrupt-OUT writes. False when the device refused it.</summary>
+    public static bool SetOutputReport(HidDevice d, byte[] report)
+    {
+        using var h = CreateFileW(d.DevicePath, 0xC0000000 /* read|write */, 3 /* share read|write */, IntPtr.Zero, 3 /* open existing */, 0, IntPtr.Zero);
+        return !h.IsInvalid && HidD_SetOutputReport(h, report, report.Length);
     }
 
     public static string ProductName(HidDevice d, string fallback)

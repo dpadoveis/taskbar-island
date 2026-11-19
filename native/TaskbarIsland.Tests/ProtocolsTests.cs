@@ -63,7 +63,6 @@ public class ProtocolsTests
     [Fact] public void MchoseChargingAndFull()
     {
         Assert.Equal(new BatteryReading(null, true), Protocols.ParseMchose(H("55653203"), out _)); // charging push
-        Assert.Equal(new BatteryReading(null, true), Protocols.ParseMchose(H("55655A00"), out _)); // cable in, level frozen
         Assert.Equal(new BatteryReading(100, true), Protocols.ParseMchose(H("55656404"), out _));
     }
 
@@ -72,6 +71,78 @@ public class ProtocolsTests
         Assert.Null(Protocols.ParseMchose(H("5565001A"), out var asleep)); Assert.True(asleep);   // off: a battery frame without reading
         Assert.Null(Protocols.ParseMchose(H("55110200"), out var other)); Assert.False(other);   // EQ-mode frame: ignored
         Assert.Null(Protocols.ParseMchose(H("0601"), out var media)); Assert.False(media);       // media keys: ignored
+    }
+
+    [Fact] public void MchoseNewDongleFirmwareStateZero()
+    {
+        // dongle 0013 + headset 0002 answers 55 65 pct 00 while on battery (HeadsetControl PR #624 report)
+        Assert.Equal(new BatteryReading(72, false), Protocols.ParseMchose(H("55654800"), out var b)); Assert.True(b);
+        Assert.Null(Protocols.ParseMchose(H("55650000"), out _));
+    }
+
+    // ---- VXE / ATK / Pulsar (layout from the Linux "HID: pulsar" driver) ----
+    static byte[] Vxe(string hex16)
+    {
+        var f = H(hex16); var r = new byte[17]; f.CopyTo(r, 0);
+        byte sum = 0; for (int i = 0; i < 16; i++) sum += r[i];
+        r[16] = (byte)(0x55 - sum); return r;
+    }
+
+    [Fact] public void VxeRequestBytes()
+    {
+        Assert.Equal(H("080300000000000000000000000000004A"), Protocols.VxeRequest(0x03)); // 0x55-0x0B
+        Assert.Equal(H("0804000000000000000000000000000049"), Protocols.VxeRequest(0x04));
+    }
+
+    [Fact] public void VxeStatusAndPower()
+    {
+        Assert.True(Protocols.ParseVxeStatus(Vxe("080300000000010000")));
+        Assert.False(Protocols.ParseVxeStatus(Vxe("080300000000000000")));
+        Assert.Equal(new BatteryReading(64, false), Protocols.ParseVxePower(Vxe("08040000000040000F a0".Replace(" ", ""))));
+        Assert.Equal(new BatteryReading(87, true), Protocols.ParseVxePower(Vxe("080400000000570110")));
+    }
+
+    [Fact] public void VxeRejectsBadFrames()
+    {
+        var bad = Vxe("080400000000400000"); bad[16] ^= 1;
+        Assert.Null(Protocols.ParseVxePower(bad));                               // checksum
+        Assert.Null(Protocols.ParseVxePower(Vxe("080300000000400000")));          // wrong echo
+        Assert.Null(Protocols.ParseVxePower(Vxe("080400000000C80000")));          // > 100 %
+        Assert.Null(Protocols.ParseVxeStatus(Vxe("080300000000050000")));         // bogus availability
+    }
+
+    // ---- Logitech Centurion (frames captured from a real G522, dongle 046D:0B18) ----
+    static byte[] Pad(string hex) { var b = new byte[64]; H(hex).CopyTo(b, 0); return b; }
+
+    [Fact] public void CenturionRequests()
+    {
+        Assert.Equal(Pad("5023050000010003"), Protocols.CenturionGetFeature(0x0003));
+        Assert.Equal(Pad("50230a0003110005000001 0104".Replace(" ", "")), Protocols.CenturionBridged(3, 0, [0x01, 0x04]));
+        Assert.Equal(Pad("5023080003110003000501"), Protocols.CenturionBridged(3, 5, []));
+    }
+
+    [Fact] public void CenturionReplies()
+    {
+        Assert.Equal((byte)3, Protocols.CenturionFeatureIndex(H("50230600000103000100")));
+        Assert.Null(Protocols.CenturionBridgedData(H("50230300031100000000000000"), 3, 0)); // ack only
+        Assert.Equal(H("050003"), Protocols.CenturionBridgedData(H("50230b0003100006000001050003000000"), 3, 0));
+        var batt = Protocols.CenturionBridgedData(H("50230b0003100006000501373200000000"), 3, 5);
+        Assert.Equal(new BatteryReading(50, false), Protocols.ParseCenturionBattery(batt)); // G HUB showed 50 %
+        Assert.Equal(new BatteryReading(80, true), Protocols.ParseCenturionBattery(H("555001")));
+        Assert.True(Protocols.CenturionHeadsetGone(H("5023050003000000"), 3));
+    }
+
+    // ---- Logitech HID++ 2.0 ----
+    [Fact] public void HidppRequestAndReply()
+    {
+        Assert.Equal(H("110100" + "0A" + "1004" + "000000000000000000000000000000"[..28]), Protocols.HidppRequest(1, 0, 0, 0x10, 0x04));
+        Assert.Equal(H("06"), Protocols.HidppReply(H("1101000A06000000000000000000000000000000"), 1, 0, 0)![..1]);
+        Assert.Empty(Protocols.HidppReply(H("1101FF060A050000000000000000000000000000"), 1, 6, 1)!);  // HID++ error
+        Assert.Null(Protocols.HidppReply(H("1102000A06000000000000000000000000000000"), 1, 0, 0));    // other device
+        Assert.Equal(new BatteryReading(64, false), Protocols.ParseUnifiedBattery(H("40080000")));
+        Assert.Equal(new BatteryReading(64, true), Protocols.ParseUnifiedBattery(H("40080101")));
+        Assert.Equal(new BatteryReading(100, true), Protocols.ParseUnifiedBattery(H("64080301")));
+        Assert.Equal(new BatteryReading(30, false), Protocols.ParseBatteryStatus(H("1E0000")));
     }
 
     // ---- Delux M800 Pro (layout from krisgfx9/Wireless-Device-Battery-Monitor#156 and xb-bx/m800-pro-driver) ----
