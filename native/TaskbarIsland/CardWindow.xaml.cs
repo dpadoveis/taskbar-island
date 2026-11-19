@@ -108,7 +108,10 @@ public partial class CardWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
-        Win32.MakeToolNoActivate(new WindowInteropHelper(this).Handle);
+        var hwnd = new WindowInteropHelper(this).Handle;
+        Win32.MakeToolNoActivate(hwnd);
+        // transparent (layered) window: software rendering, no GPU drivers loaded into the process (memory)
+        if (HwndSource.FromHwnd(hwnd) is HwndSource src) src.CompositionTarget.RenderMode = RenderMode.SoftwareOnly;
     }
 
     public bool IsOpen => open;
@@ -129,7 +132,7 @@ public partial class CardWindow : Window
         ShuffleButton.Visibility = m.Shuffle == null ? Visibility.Collapsed : Visibility.Visible;
         SetToggleLook(ShuffleButton, ShuffleDot, m.Shuffle == true);
         RepeatButton.Visibility = m.Repeat == null ? Visibility.Collapsed : Visibility.Visible;
-        RepeatGlyph.Text = m.Repeat == RepeatMode.Track ? "" : ""; // repeat one / repeat all
+        RepeatOne.Visibility = m.Repeat == RepeatMode.Track ? Visibility.Visible : Visibility.Collapsed; // "repeat one"
         SetToggleLook(RepeatButton, RepeatDot, m.Repeat is RepeatMode.List or RepeatMode.Track);
 
         canSeek = m.CanSeek;
@@ -152,7 +155,7 @@ public partial class CardWindow : Window
 
     void ShowProgress(double frac, double pos, double dur)
     {
-        double w = ProgressTrack.ActualWidth > 0 ? ProgressTrack.ActualWidth : Card.Width - 28;
+        double w = ProgressTrack.ActualWidth > 0 ? ProgressTrack.ActualWidth : Card.Width - 38;
         ProgressFill.Width = w * frac;
         SeekKnob.Margin = new Thickness(Math.Clamp(w * frac - 6, -6, w - 6), 0, 0, 0);
         Elapsed.Text = Fmt(pos);
@@ -207,7 +210,7 @@ public partial class CardWindow : Window
         if (Height is double.NaN || settingsHeight == 0)
         {
             // size the window once for "settings open": card (closed) + settings panel + 10px margins
-            SettingsContent.Measure(new Size(Card.Width - 28, double.PositiveInfinity));
+            SettingsContent.Measure(new Size(Card.Width - 38, double.PositiveInfinity));
             settingsHeight = Math.Ceiling(SettingsContent.DesiredSize.Height);
             Card.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             Height = Math.Ceiling(Card.DesiredSize.Height) + settingsHeight + 2;
@@ -246,11 +249,11 @@ public partial class CardWindow : Window
         if (!playing) return;
         var bars = new[] { (Eq1, 0.50, 0.0), (Eq2, 0.40, 0.45), (Eq3, 0.575, 0.55), (Eq4, 0.45, 0.75) };
         foreach (var (r, secs, delay) in bars)
-            ((ScaleTransform)r.RenderTransform).BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(MainWindow.EqLo, 1, TimeSpan.FromSeconds(secs))
+            ((ScaleTransform)r.RenderTransform).BeginAnimation(ScaleTransform.ScaleYProperty, Smooth(new DoubleAnimation(MainWindow.EqLo, 1, TimeSpan.FromSeconds(secs))
             {
                 AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever, BeginTime = TimeSpan.FromSeconds(delay),
                 EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
-            });
+            })); // smooth while the card is open (only then)
     }
 
     void StopEq()

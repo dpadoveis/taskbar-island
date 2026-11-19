@@ -25,8 +25,7 @@ public partial class App : Application
         // 20 is the chosen balance. TI_FPS / TI_HW env vars override for experiments.
         int fps = int.TryParse(Environment.GetEnvironmentVariable("TI_FPS"), out var f) ? f : 20;
         Timeline.DesiredFrameRateProperty.OverrideMetadata(typeof(Timeline), new FrameworkPropertyMetadata(fps));
-        if (Environment.GetEnvironmentVariable("TI_HW") == null)
-            System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
+        // (software rendering is now set per window: the transparent island uses it, the native card uses the GPU)
         base.OnStartup(e);
         new MainWindow().Show();
     }

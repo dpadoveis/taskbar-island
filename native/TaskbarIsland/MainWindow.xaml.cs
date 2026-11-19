@@ -111,6 +111,9 @@ public partial class MainWindow : Window
     {
         base.OnSourceInitialized(e);
         hwnd = new WindowInteropHelper(this).Handle;
+        // layered (transparent) window: software rendering avoids a GPU->CPU copy every frame (measured cheaper)
+        if (Environment.GetEnvironmentVariable("TI_HW") == null && HwndSource.FromHwnd(hwnd) is HwndSource src)
+            src.CompositionTarget.RenderMode = RenderMode.SoftwareOnly;
         Win32.MakeToolNoActivate(hwnd);
         Win32.OwnByTaskbar(hwnd); // rides along with the taskbar: no more vanishing on Start / Win key
         Place();
@@ -279,12 +282,14 @@ public partial class MainWindow : Window
         // springy morph between sizes
         var d = TimeSpan.FromMilliseconds(first ? 0 : 480);
         var spring = new BackEase { Amplitude = 0.35, EasingMode = EasingMode.EaseOut };
-        void To(FrameworkElement e, DependencyProperty p, double v) => e.BeginAnimation(p, new DoubleAnimation(v, d) { EasingFunction = spring });
+        // morphs are short: run them at 60 fps for smoothness (steady animations stay at 20 to save CPU)
+        static T Fast<T>(T a) where T : Timeline { Timeline.SetDesiredFrameRate(a, 60); return a; }
+        void To(FrameworkElement e, DependencyProperty p, double v) => e.BeginAnimation(p, Fast(new DoubleAnimation(v, d) { EasingFunction = spring }));
 
         To(TextWrap, WidthProperty, mode == Mode.Normal ? TextW : 0);
         To(SlotWrap, WidthProperty, mode == Mode.Closed ? 0 : SlotW);
         ProgressTrack.BeginAnimation(OpacityProperty, new DoubleAnimation(mode == Mode.Normal ? 1 : 0, TimeSpan.FromMilliseconds(200)));
-        Island.BeginAnimation(PaddingProperty, new ThicknessAnimation(new Thickness(5, 0, mode == Mode.Closed ? 5 : 12, 0), d) { EasingFunction = spring });
+        Island.BeginAnimation(PaddingProperty, Fast(new ThicknessAnimation(new Thickness(5, 0, mode == Mode.Closed ? 5 : 12, 0), d) { EasingFunction = spring }));
 
         if (mode == Mode.Closed)
         {

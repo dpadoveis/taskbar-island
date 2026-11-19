@@ -63,5 +63,31 @@
         </Setter.Value>
       </Setter>
     </Style>
+
+    <!-- Spotify-style play/pause: dark glyph in a white circle, grows a touch on hover -->
+    <Style x:Key="PlayButton" TargetType="Button">
+      <Setter Property="Width" Value="40"/>
+      <Setter Property="Height" Value="40"/>
+      <Setter Property="Focusable" Value="False"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Grid x:Name="root" RenderTransformOrigin="0.5,0.5">
+              <Grid.RenderTransform><ScaleTransform x:Name="sc" ScaleX="1" ScaleY="1"/></Grid.RenderTransform>
+              <Ellipse Fill="White"/>
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="root" Property="RenderTransform"><Setter.Value><ScaleTransform ScaleX="1.06" ScaleY="1.06"/></Setter.Value></Setter>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="root" Property="RenderTransform"><Setter.Value><ScaleTransform ScaleX="0.94" ScaleY="0.94"/></Setter.Value></Setter>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Application.Resources>
 </Application>
