@@ -4,7 +4,14 @@ using Windows.Media.Control;
 
 namespace TaskbarIsland.Core;
 
-public sealed record MediaInfo(string Title, string Artist, string Album, bool Playing, double Position, double Duration, byte[]? Thumbnail, string ThumbId);
+public enum RepeatMode { Off, Track, List }
+
+public sealed record MediaInfo(string Title, string Artist, string Album, bool Playing, double Position, double Duration, byte[]? Thumbnail, string ThumbId)
+{
+    public bool? Shuffle { get; init; }          // null = Spotify doesn't expose it
+    public RepeatMode? Repeat { get; init; }     // null = not exposed
+    public bool CanSeek { get; init; }
+}
 
 /// <summary>Spotify (desktop app) via the Windows media controls. Reports null when Spotify isn't open.</summary>
 public sealed class SpotifySource(Action<MediaInfo?> update)
@@ -28,7 +35,33 @@ public sealed class SpotifySource(Action<MediaInfo?> update)
                 case "toggle": await s.TryTogglePlayPauseAsync(); break;
                 case "next": await s.TrySkipNextAsync(); break;
                 case "prev": await s.TrySkipPreviousAsync(); break;
+                case "shuffle":
+                    await s.TryChangeShuffleActiveAsync(!(s.GetPlaybackInfo().IsShuffleActive ?? false));
+                    break;
+                case "repeat": // Spotify's own order: off -> repeat all -> repeat one -> off
+                    var next = s.GetPlaybackInfo().AutoRepeatMode switch
+                    {
+                        Windows.Media.MediaPlaybackAutoRepeatMode.List => Windows.Media.MediaPlaybackAutoRepeatMode.Track,
+                        Windows.Media.MediaPlaybackAutoRepeatMode.Track => Windows.Media.MediaPlaybackAutoRepeatMode.None,
+                        _ => Windows.Media.MediaPlaybackAutoRepeatMode.List,
+                    };
+                    await s.TryChangeAutoRepeatModeAsync(next);
+                    break;
             }
+            await Task.Delay(250);
+            await Poll();
+        }
+        catch { }
+    }
+
+    /// <summary>Jump to a position in the current track (seconds).</summary>
+    public async void Seek(double seconds)
+    {
+        var s = session;
+        if (s == null) return;
+        try
+        {
+            await s.TryChangePlaybackPositionAsync(TimeSpan.FromSeconds(Math.Max(0, seconds)).Ticks);
             await Task.Delay(250);
             await Poll();
         }
@@ -76,7 +109,20 @@ public sealed class SpotifySource(Action<MediaInfo?> update)
             thumb = await ReadThumb(props.Thumbnail);
             thumbId = thumb == null ? "" : Convert.ToHexString(MD5.HashData(thumb))[..12];
         }
-        update(new MediaInfo(title, props.Artist ?? props.AlbumArtist ?? "", props.AlbumTitle ?? "", playing, position, Math.Max(duration, 0), thumb, thumbId));
+        var c = info.Controls;
+        update(new MediaInfo(title, props.Artist ?? props.AlbumArtist ?? "", props.AlbumTitle ?? "", playing, position, Math.Max(duration, 0), thumb, thumbId)
+        {
+            Shuffle = c.IsShuffleEnabled ? info.IsShuffleActive ?? false : null,
+            Repeat = c.IsRepeatEnabled
+                ? info.AutoRepeatMode switch
+                {
+                    Windows.Media.MediaPlaybackAutoRepeatMode.Track => RepeatMode.Track,
+                    Windows.Media.MediaPlaybackAutoRepeatMode.List => RepeatMode.List,
+                    _ => RepeatMode.Off,
+                }
+                : null,
+            CanSeek = c.IsPlaybackPositionEnabled && duration > 0,
+        });
     }
 
     static async Task<byte[]?> ReadThumb(Windows.Storage.Streams.IRandomAccessStreamReference? r)

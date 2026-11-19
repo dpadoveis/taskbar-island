@@ -99,7 +99,8 @@ Clicando na **engrenagem ⚙** no canto de cima do cartão, aparecem duas opçõ
 
 | Ação | O que faz |
 |---|---|
-| Passar o mouse em cima da música | abre um **cartão acima da barra** com a capa grande, álbum, tempo da música e os botões **⏮ ⏯ ⏭** |
+| Passar o mouse em cima da música | abre um **cartão acima da barra** com a capa grande, álbum, tempo da música e os botões **🔀 ⏮ ⏯ ⏭ 🔁** (aleatório e repetir ficam coloridos com um pontinho quando ligados; o repetir alterna entre desligado → playlist → só esta música) |
+| Clicar ou arrastar a **barra de progresso** do cartão | pula para aquela parte da música |
 | Clicar na **capa** | tocar / pausar (no cartão: abre o Spotify) |
 | **Rodinha do mouse** em cima da música | próxima / anterior |
 | Passar o mouse em cima de uma **bateria** | mostra o nome do aparelho e a **porcentagem exata** |

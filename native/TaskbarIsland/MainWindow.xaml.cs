@@ -71,6 +71,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        TextLook.Apply(Track);
         Directory.CreateDirectory(DataDir);
         Eq1.Fill = Eq2.Fill = Eq3.Fill = Eq4.Fill = accent;
         ProgressFill.Background = accent;
@@ -373,7 +374,7 @@ public partial class MainWindow : Window
         // card: opens after a short dwell on the island, closes shortly after leaving island + card
         if (mode != Mode.Closed && media != null && !CardOpen && hoverIsland && (DateTime.Now - hoverStarted).TotalMilliseconds > 350)
             OpenCard();
-        else if (CardOpen && !hoverIsland && !hoverCard && (DateTime.Now - hoverEnded).TotalMilliseconds > 300)
+        else if (CardOpen && !card!.IsSeeking && !hoverIsland && !hoverCard && (DateTime.Now - hoverEnded).TotalMilliseconds > 300)
         {
             card?.Collapse();
             UpdateMode();
@@ -438,6 +439,11 @@ public partial class MainWindow : Window
         if (card != null) return;
         var c = new CardWindow();
         c.Command += cmd => spotify!.Command(cmd);
+        c.Seek += secs =>
+        {
+            spotify!.Seek(secs);
+            if (media != null) { media = media with { Position = secs }; UpdateProgress(); } // feel instant
+        };
         c.OpenSpotify += OpenSpotify;
         c.SetGameMode(settings.GameMode);
         c.SetColor(settings.Color);

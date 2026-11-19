@@ -24,6 +24,8 @@ public static class S
         ? ["Rosa", "Azul", "Verde", "Roxo", "Laranja", "Branco"]
         : ["Pink", "Blue", "Green", "Purple", "Orange", "White"];
     public static string OpenSpotify => Pt ? "Abrir o Spotify" : "Open Spotify";
+    public static string Shuffle => Pt ? "Aleatório" : "Shuffle";
+    public static string Repeat => Pt ? "Repetir" : "Repeat";
     public static string Asleep => Pt ? "dormindo ou desligado" : "asleep or off";
     public static string ChargingCable => Pt ? "carregando pelo cabo" : "charging (cable)";
     public static string Charging => Pt ? "carregando" : "charging";
