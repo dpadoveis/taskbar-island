@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>TaskbarIsland</AssemblyName>
-    <Version>1.2.5</Version>
+    <Version>1.2.6</Version>
     <RootNamespace>TaskbarIsland</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
@@ -24,6 +24,11 @@
 
   <ItemGroup>
     <PackageReference Include="HidSharp" Version="2.1.0" />
+  </ItemGroup>
+
+  <!-- Figtree (SIL OFL 1.1): free geometric sans close to Spotify's own typeface; used for Spotify text only -->
+  <ItemGroup>
+    <Resource Include="Fonts\*.ttf" />
   </ItemGroup>
 
 </Project>

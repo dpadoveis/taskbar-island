@@ -5,6 +5,8 @@
   <Application.Resources>
     <FontFamily x:Key="TextFont">Segoe UI Variable Text, Segoe UI</FontFamily>
     <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+    <!-- embedded Figtree for everything Spotify (falls back to Segoe UI if it ever fails to load) -->
+    <FontFamily x:Key="SpotifyFont">pack://application:,,,/Fonts/#Figtree, Segoe UI Variable Text, Segoe UI</FontFamily>
 
     <!-- borderless round-hover button for the media controls -->
     <Style x:Key="CtlButton" TargetType="Button">

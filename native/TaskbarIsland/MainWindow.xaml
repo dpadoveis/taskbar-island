@@ -29,7 +29,7 @@
           <!-- title - artist; the wrapper's width animates to 0 in Compact/Closed -->
           <Border x:Name="TextWrap" Width="0" ClipToBounds="True">
             <Canvas x:Name="TextHost" Width="180" Height="20" Margin="10,0,0,0" ClipToBounds="True" HorizontalAlignment="Left">
-              <StackPanel x:Name="Track" Orientation="Horizontal" Canvas.Left="2" Canvas.Top="0" TextElement.FontSize="13">
+              <StackPanel x:Name="Track" Orientation="Horizontal" Canvas.Left="2" Canvas.Top="0" TextElement.FontSize="13.5" TextElement.FontFamily="{StaticResource SpotifyFont}">
                 <StackPanel.RenderTransform><TranslateTransform x:Name="TrackShift"/></StackPanel.RenderTransform>
                 <TextBlock x:Name="T1" VerticalAlignment="Center"/>
                 <TextBlock x:Name="T2" VerticalAlignment="Center" Margin="32,0,0,0" Visibility="Collapsed"/>

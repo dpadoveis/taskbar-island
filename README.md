@@ -237,4 +237,6 @@ Os protocolos de bateria foram aprendidos com o trabalho de engenharia reversa d
 - MCHOSE V9 Pro: [NicolasBonnefont/mchose-v9](https://github.com/NicolasBonnefont/mchose-v9), [JoaoKSS/MCHOSE_v9_PRO_Controller](https://github.com/JoaoKSS/MCHOSE_v9_PRO_Controller), [PyFlat/Device-Battery-Info#24](https://github.com/PyFlat/Device-Battery-Info/issues/24)
 - Delux M800 Pro: [krisgfx9/Wireless-Device-Battery-Monitor#156](https://github.com/krisgfx9/Wireless-Device-Battery-Monitor/pull/156), [xb-bx/m800-pro-driver](https://github.com/xb-bx/m800-pro-driver)
 
-Projeto sem ligação com Spotify, AULA, Attack Shark ou Logitech. Licença [MIT](LICENSE).
+Fonte da parte do Spotify: [Figtree](https://github.com/erikdkennedy/figtree) (© The Figtree Project Authors, [SIL Open Font License 1.1](native/TaskbarIsland/Fonts/OFL.txt)), embutida no app. A fonte oficial do Spotify é proprietária e não pode ser distribuída; a Figtree é a alternativa livre mais parecida.
+
+Projeto sem ligação com Spotify, AULA, Attack Shark ou Logitech. Código sob licença [MIT](LICENSE).
