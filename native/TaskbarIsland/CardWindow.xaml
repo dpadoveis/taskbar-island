@@ -159,7 +159,7 @@
           <Grid x:Name="VolArea" Grid.Column="1" Height="16" Margin="6,0,2,0" Background="#01000000" Cursor="Hand">
             <Grid x:Name="VolTrack" Height="4" VerticalAlignment="Center">
               <Border Background="#1FFFFFFF" CornerRadius="2"/>
-              <Border x:Name="VolFill" HorizontalAlignment="Left" Width="0" CornerRadius="2" Background="#E6FFFFFF"/>
+              <Border x:Name="VolFill" HorizontalAlignment="Left" Width="0" CornerRadius="2"/>
             </Grid>
             <Ellipse x:Name="VolKnob" Width="12" Height="12" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" IsHitTestVisible="False"/>
           </Grid>

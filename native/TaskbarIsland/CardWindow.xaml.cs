@@ -59,6 +59,7 @@ public partial class CardWindow : Window
         TextLook.Apply(Title); TextLook.Apply(Sub); TextLook.Apply(Elapsed); TextLook.Apply(Remaining);
         Eq1.Fill = Eq2.Fill = Eq3.Fill = Eq4.Fill = accent;
         ProgressFill.Background = accent;
+        VolFill.Background = accent; // volume bar follows the album colour too
         PlayPause.Data = MainWindow.PauseGeo;
         PrevButton.ToolTip = S.Prev; ToggleButton.ToolTip = S.PlayPause; NextButton.ToolTip = S.Next;
         Cover.ToolTip = S.OpenSpotify;
@@ -90,7 +91,7 @@ public partial class CardWindow : Window
         VolHintLink.MouseLeftButtonUp += (_, _) => OnVolLink();
         VolHintLink.Text = S.VolRestart;
         MuteButton.ToolTip = S.Mute;
-        MuteButton.Foreground = new SolidColorBrush(Color.FromArgb(0xB3, 255, 255, 255));
+        MuteButton.Foreground = accent; // speaker icon in the album colour, like the bar
 
         // "auto" swatch: a little rainbow = colour follows the cover
         var rainbow = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
