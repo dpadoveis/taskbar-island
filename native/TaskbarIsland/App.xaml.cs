@@ -31,7 +31,7 @@ public partial class App : Application
     }
 
     /// <summary>Appends to %APPDATA%\TaskbarIsland\error.log (kept under ~200 KB).</summary>
-    static void Log(Exception? e)
+    internal static void Log(Exception? e)
     {
         if (e == null) return;
         try

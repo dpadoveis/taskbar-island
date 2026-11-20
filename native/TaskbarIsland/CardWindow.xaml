@@ -48,6 +48,27 @@
               </StackPanel>
               <StackPanel x:Name="Swatches" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-3,0"/>
             </Grid>
+            <!-- Spotify volume (optional bridge inside Spotify); suspended for the Microsoft Store Spotify -->
+            <Grid x:Name="VolRow" Margin="0,12,0,0" Background="#01000000" Cursor="Hand">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="&#xE767;" FontFamily="{StaticResource IconFont}" FontSize="13" Foreground="#B3FFFFFF" VerticalAlignment="Center" Width="18"/>
+                <TextBlock x:Name="VolLabel" FontSize="12.5" Foreground="#E6FFFFFF" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                <!-- experimental feature: small "BETA" pill -->
+                <Border x:Name="BetaTag" Margin="7,0,0,0" Padding="5,1,5,1" CornerRadius="5" VerticalAlignment="Center"
+                        Background="#1FFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+                  <TextBlock x:Name="BetaText" Text="BETA" FontSize="8.5" FontWeight="Bold" Foreground="#CCFFFFFF"/>
+                </Border>
+              </StackPanel>
+              <Border x:Name="VolSwitch" Width="30" Height="16" CornerRadius="8" Background="#33FFFFFF" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Ellipse Width="12" Height="12" Fill="White" HorizontalAlignment="Left" Margin="2,0,0,0">
+                  <Ellipse.RenderTransform><TranslateTransform x:Name="VolKnobShift"/></Ellipse.RenderTransform>
+                </Ellipse>
+              </Border>
+            </Grid>
+            <StackPanel x:Name="VolNote" Margin="26,6,0,0" Visibility="Collapsed">
+              <TextBlock x:Name="VolNoteText" FontSize="11.5" Foreground="#99FFFFFF" TextWrapping="Wrap" LineHeight="15"/>
+              <TextBlock x:Name="VolNoteLink" FontSize="11.5" FontWeight="SemiBold" Margin="0,4,0,0" Cursor="Hand" HorizontalAlignment="Left"/>
+            </StackPanel>
             <Border Height="1" Background="#14FFFFFF" Margin="0,16,0,16"/>
           </StackPanel>
         </Border>
@@ -127,6 +148,26 @@
             </Grid>
           </Button>
         </Grid>
+
+        <!-- Spotify volume: slider while the bridge is live, or a one-line "reopen Spotify" hint -->
+        <Grid x:Name="VolumeArea" Margin="0,8,0,0" Visibility="Collapsed">
+          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <Button x:Name="MuteButton" Style="{StaticResource CtlButton}" Click="OnMute" Margin="-4,0,0,0">
+            <TextBlock x:Name="VolIcon" Text="&#xE995;" FontFamily="{StaticResource IconFont}" FontSize="14"
+                       Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+          </Button>
+          <Grid x:Name="VolArea" Grid.Column="1" Height="16" Margin="6,0,2,0" Background="#01000000" Cursor="Hand">
+            <Grid x:Name="VolTrack" Height="4" VerticalAlignment="Center">
+              <Border Background="#1FFFFFFF" CornerRadius="2"/>
+              <Border x:Name="VolFill" HorizontalAlignment="Left" Width="0" CornerRadius="2" Background="#E6FFFFFF"/>
+            </Grid>
+            <Ellipse x:Name="VolKnob" Width="12" Height="12" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" IsHitTestVisible="False"/>
+          </Grid>
+        </Grid>
+        <StackPanel x:Name="VolHint" Orientation="Horizontal" Margin="0,10,0,0" HorizontalAlignment="Center" Visibility="Collapsed">
+          <TextBlock x:Name="VolHintText" FontSize="11.5" Foreground="#99FFFFFF" VerticalAlignment="Center"/>
+          <TextBlock x:Name="VolHintLink" FontSize="11.5" FontWeight="SemiBold" Margin="6,0,0,0" Cursor="Hand" VerticalAlignment="Center"/>
+        </StackPanel>
       </StackPanel>
 
       <!-- gear (top-right corner): shows / hides the settings -->

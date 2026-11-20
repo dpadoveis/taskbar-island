@@ -12,6 +12,9 @@ public sealed class Settings
     /// <summary>"auto" = colour taken from the album cover; otherwise one of <see cref="Presets"/> (hex).</summary>
     public string Color { get; set; } = "auto";
 
+    /// <summary>Spotify volume in the card (adds a small bridge script to the desktop Spotify). Off by default.</summary>
+    public bool SpotifyVolume { get; set; }
+
     public static readonly string[] Presets = ["#FF9BD0", "#60CDFF", "#6CCB5F", "#B4A0FF", "#FFB070", "#E8E8E8"];
 
     static string FilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TaskbarIsland", "settings.json");

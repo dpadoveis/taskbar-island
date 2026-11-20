@@ -95,15 +95,32 @@ A parte da música funciona como uma "ilha" que muda de forma:
 
 ![Cartão expandido acima da barra](docs/img/card.png)
 
-Clicando na **engrenagem ⚙** no canto de cima do cartão, aparecem duas opções (elas ficam salvas):
+Clicando na **engrenagem ⚙** no canto de cima do cartão, aparecem as opções (elas ficam salvas):
 
 - **🎮 Modo jogo** (chavinha): ligado = o widget some nos jogos em tela cheia; desligado = ele continua aparecendo mesmo jogando.
 - **Bolinhas de cor:** a primeira (colorida) usa a **cor da capa** automaticamente; as outras deixam uma **cor fixa** (rosa, azul, verde, roxo, laranja ou branco).
+- **🔊 Volume do Spotify** `BETA` (chavinha, vem desligada): coloca uma **barra de volume** no cartão. Veja [Volume do Spotify](#volume-do-spotify) logo abaixo.
+
+### Volume do Spotify
+
+> 🧪 **Recurso em teste (beta).** Funciona, mas é novo e pode ter falhas. Se algo der errado, é só desligar a chavinha: o Spotify volta ao original. Conta pra gente numa [issue](../../issues) como foi.
+
+O Windows não informa o volume do Spotify para outros programas. Para o cartão ter uma barra de volume, o widget coloca um **pequeno ajuste dentro do app do Spotify** (um script minúsculo que só mexe na barrinha de volume do próprio Spotify e conversa só com o widget, dentro do seu computador).
+
+1. Abra o cartão, clique na **engrenagem ⚙** e ligue **Volume do Spotify**.
+2. Vai aparecer **"Reabra o Spotify para ativar o volume"**: clique em **Reabrir agora** (a música pausa por uns segundos).
+3. Pronto: a barra de volume aparece embaixo dos botões. Dá para **clicar, arrastar** ou usar a **rodinha do mouse** em cima dela; o ícone 🔈 ao lado silencia / volta.
+
+- Quando o Spotify se atualiza, ele apaga o ajuste. O widget percebe e coloca de novo sozinho; às vezes pede para reabrir o Spotify mais uma vez.
+- **Desligar a chavinha tira o ajuste** e o Spotify volta a ser exatamente o original.
+- ⚠️ **Spotify instalado pela Microsoft Store não funciona**: a Store tranca os arquivos do app. Nesse caso a opção aparece apagada, com um aviso e o link para **baixar o Spotify pelo site** ([spotify.com/download](https://www.spotify.com/download/windows/)) — é o mesmo Spotify, com a sua conta, e dá a melhor experiência com o widget.
+- É um ajuste não oficial (o Spotify não oferece isso). Se um dia uma atualização grande do Spotify quebrar a barra de volume, ela só some do cartão até sair uma versão nova do widget; o resto continua funcionando.
 
 | Ação | O que faz |
 |---|---|
 | Passar o mouse em cima da música | abre um **cartão acima da barra** com a capa grande, álbum, tempo da música e os botões **🔀 ⏮ ⏯ ⏭ 🔁** (aleatório e repetir ficam coloridos com um pontinho quando ligados; o repetir alterna entre desligado → playlist → só esta música) |
 | Clicar ou arrastar a **barra de progresso** do cartão | pula para aquela parte da música |
+| Clicar, arrastar ou rodinha na **barra de volume** do cartão | muda o volume do Spotify (só com a opção **Volume do Spotify** ligada) |
 | Clicar na **capa** | tocar / pausar (no cartão: abre o Spotify) |
 | **Rodinha do mouse** em cima da música | próxima / anterior |
 | Passar o mouse em cima de uma **bateria** | mostra o nome do aparelho e a **porcentagem exata** |
@@ -184,6 +201,7 @@ Ele acha sozinho onde o widget está instalado, fecha a versão antiga, se coloc
 
 ## 7. Desinstalar
 
+0. Se você ligou o **Volume do Spotify**, desligue a chavinha antes (engrenagem ⚙ do cartão): isso devolve o Spotify ao original.
 1. Botão direito no widget → desmarque **Iniciar com o Windows** (isso apaga o atalho `Taskbar Island` da pasta Inicializar do Windows).
 2. Botão direito → **Abrir pasta do programa** (deixe essa pasta aberta).
 3. Botão direito no widget → **Sair**.
@@ -195,6 +213,7 @@ Ele acha sozinho onde o widget está instalado, fecha a versão antiga, se coloc
 ## 8. Segurança e privacidade
 
 - **Não usa internet** e não coleta nada. Só conversa com coisas do próprio computador: os receptores USB, o G HUB e os controles de mídia do Windows.
+- Com **Volume do Spotify** ligado, o widget acrescenta o arquivo `ti-volume.js` ao app do Spotify (`%APPDATA%\Spotify\Apps\xpui.spa`, com backup em `xpui.spa.taskbar-island.bak`). Esse script só lê e move a barra de volume do Spotify e só fala com o widget em `127.0.0.1` (o widget só aceita conexão vinda da página do próprio Spotify). Desligar a opção remove o script.
 - O **mouse Attack Shark nunca recebe nenhum comando** — o widget só "escuta" o que o receptor já manda sozinho.
 - O **teclado AULA recebe só um pedido de bateria** a cada 1 minuto (o mesmo que o programa oficial da AULA usa). Nenhuma configuração do teclado é alterada.
 - O **fone MCHOSE** recebe só o pedido de bateria documentado, e os **mouses Delux e VXE** só consultas de leitura. Os comandos de configuração desses aparelhos (EQ, DPI, pareamento etc.) nunca são enviados.
@@ -214,6 +233,7 @@ native/
                         MchoseProvider (MCHOSE V9 Pro), DeluxProvider (Delux M800 Pro), VxeProvider (VXE / Pulsar)
     Core/Logitech.cs    LogitechProvider: Logitech direto do receptor (Centurion e HID++) enquanto o G HUB está fechado
     Core/Spotify.cs     música via controles de mídia do Windows (só Spotify)
+    Core/SpotifyVolume.cs  volume opcional: injeta Spotify/ti-volume.js no xpui.spa e conversa por WebSocket local
     Core/Win32.cs       barra de tarefas, tela cheia, iniciar com o Windows
     Core/Installer.cs   o próprio .exe se instala / atualiza a cópia instalada (nunca rebaixa versão)
     Core/Strings.cs     textos PT/EN

@@ -99,6 +99,7 @@ public partial class MainWindow : Window
         new LogitechProvider(sink).Start(cts.Token); // Logitech straight from the receiver while G HUB is closed
         spotify = new SpotifySource(m => Dispatcher.BeginInvoke(() => OnMedia(m)));
         spotify.Start(cts.Token);
+        if (settings.SpotifyVolume) StartVolume();
 
         FirstRun();
         ApplyTheme(Win32.TaskbarIsLight());
@@ -441,6 +442,34 @@ public partial class MainWindow : Window
         if (bubble.IsOpen) bubble.IsOpen = false;
     }
 
+    // ===================== Spotify volume (optional) =====================
+    SpotifyVolume? vol;
+    SpotifyInstall spotifyInstall = SpotifyInstall.Desktop;
+
+    void StartVolume()
+    {
+        if (vol != null) return;
+        vol = new SpotifyVolume();
+        vol.Changed += () => Dispatcher.BeginInvoke(PushVolume);
+        vol.Start();
+    }
+
+    void PushVolume() =>
+        card?.SetVolumeFeature(settings.SpotifyVolume, vol?.State ?? VolumeState.Off, spotifyInstall, vol?.Volume ?? -1);
+
+    void SetSpotifyVolumeEnabled(bool on)
+    {
+        settings.SpotifyVolume = on;
+        settings.Save();
+        if (on) StartVolume();
+        else
+        {
+            vol?.Stop(); vol = null;
+            Task.Run(() => { try { SpotifyVolume.Unpatch(); } catch { } }); // Spotify goes back to its original files
+        }
+        PushVolume();
+    }
+
     void EnsureCard()
     {
         if (card != null) return;
@@ -456,6 +485,11 @@ public partial class MainWindow : Window
         c.SetColor(settings.Color);
         c.GameModeChanged += SetGameModeEnabled;
         c.ColorChosen += key => { settings.Color = key; settings.Save(); ApplyColors(); };
+        spotifyInstall = SpotifyVolume.Detect();
+        c.SpotifyVolumeChanged += SetSpotifyVolumeEnabled;
+        c.VolumeSet += v => vol?.SetVolume(v);
+        c.RestartSpotify += () => Task.Run(() => { SpotifyVolume.RestartSpotify(); vol?.Recheck(); });
+        c.SetVolumeFeature(settings.SpotifyVolume, vol?.State ?? VolumeState.Off, spotifyInstall, vol?.Volume ?? -1);
         // once hidden, throw the window away a bit later and hand its memory back to Windows
         c.Collapsed += () =>
         {

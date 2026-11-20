@@ -24,6 +24,20 @@ public static class S
         ? ["Rosa", "Azul", "Verde", "Roxo", "Laranja", "Branco"]
         : ["Pink", "Blue", "Green", "Purple", "Orange", "White"];
     public static string OpenSpotify => Pt ? "Abrir o Spotify" : "Open Spotify";
+    public static string SpotifyVolume => Pt ? "Volume do Spotify" : "Spotify volume";
+    public static string SpotifyVolumeTip => Pt
+        ? "Recurso em teste (beta). Adiciona um pequeno ajuste ao app do Spotify para controlar o volume pelo card. Desligar remove o ajuste."
+        : "Experimental (beta). Adds a small tweak to the Spotify app so the card can control its volume. Switching off removes it.";
+    public static string VolStore => Pt
+        ? "Indisponível: seu Spotify foi instalado pela Microsoft Store, que não permite esse ajuste. Para usar o volume (e ter a melhor experiência), instale o Spotify pelo site."
+        : "Unavailable: your Spotify came from the Microsoft Store, which doesn't allow this tweak. To get the volume (and the best experience), install Spotify from its website.";
+    public static string VolStoreLink => Pt ? "Baixar no site do Spotify ↗" : "Download from Spotify's website ↗";
+    public static string VolNotInstalled => Pt ? "Spotify para computador não encontrado." : "Spotify desktop app not found.";
+    public static string VolWaiting => Pt ? "Reabra o Spotify para ativar o volume." : "Reopen Spotify to enable the volume.";
+    public static string VolFailed => Pt ? "Não deu para ativar o volume agora." : "Couldn't enable the volume right now.";
+    public static string VolRestart => Pt ? "Reabrir agora" : "Reopen now";
+    public static string Volume => Pt ? "Volume" : "Volume";
+    public static string Mute => Pt ? "Silenciar" : "Mute";
     public static string Shuffle => Pt ? "Aleatório" : "Shuffle";
     public static string Repeat => Pt ? "Repetir" : "Repeat";
     public static string Asleep => Pt ? "dormindo ou desligado" : "asleep or off";

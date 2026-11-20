@@ -18,6 +18,9 @@ public partial class CardWindow : Window
     public event Action<string>? ColorChosen;
     /// <summary>Raised once the card has finished hiding.</summary>
     public event Action? Collapsed;
+    public event Action<bool>? SpotifyVolumeChanged;   // switch flipped
+    public event Action<double>? VolumeSet;            // 0..1 chosen in the card
+    public event Action? RestartSpotify;
 
     readonly SolidColorBrush accent = new(Accent.NeutralAccent);
     readonly Dictionary<string, Ellipse> rings = new();
@@ -64,6 +67,7 @@ public partial class CardWindow : Window
         ShuffleButton.ToolTip = S.Shuffle; RepeatButton.ToolTip = S.Repeat;
         ShuffleDot.Fill = RepeatDot.Fill = accent;
         WireSeek();
+        WireVolume();
 
         GameLabel.Text = S.GameMode;
         ColorLabel.Text = S.Color;
@@ -71,6 +75,22 @@ public partial class CardWindow : Window
         GearButton.Foreground = new SolidColorBrush(Color.FromArgb(0x80, 255, 255, 255));
         GameRow.ToolTip = S.GameModeTip;
         GameRow.MouseLeftButtonUp += (_, _) => { SetGameMode(!gameMode, animate: true); GameModeChanged?.Invoke(gameMode); };
+
+        VolLabel.Text = S.SpotifyVolume;
+        VolRow.ToolTip = S.SpotifyVolumeTip;
+        VolRow.MouseLeftButtonUp += (_, _) =>
+        {
+            if (volInstall == SpotifyInstall.Store) return; // suspended
+            volEnabled = !volEnabled;
+            SpotifyVolumeChanged?.Invoke(volEnabled);
+            ApplyVolumeLook(animate: true);
+        };
+        VolNoteLink.Foreground = VolHintLink.Foreground = accent;
+        VolNoteLink.MouseLeftButtonUp += (_, _) => OnVolLink();
+        VolHintLink.MouseLeftButtonUp += (_, _) => OnVolLink();
+        VolHintLink.Text = S.VolRestart;
+        MuteButton.ToolTip = S.Mute;
+        MuteButton.Foreground = new SolidColorBrush(Color.FromArgb(0xB3, 255, 255, 255));
 
         // "auto" swatch: a little rainbow = colour follows the cover
         var rainbow = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
@@ -115,6 +135,116 @@ public partial class CardWindow : Window
     }
 
     public bool IsOpen => open;
+
+    // ---------- Spotify volume ----------
+    bool volEnabled, volDragging;
+    VolumeState volState = VolumeState.Off;
+    SpotifyInstall volInstall = SpotifyInstall.Desktop;
+    double volume = -1, beforeMute = 0.5;
+
+    /// <summary>Switch position, bridge state and which Spotify is installed (Store = suspended row + notice).</summary>
+    public void SetVolumeFeature(bool enabled, VolumeState state, SpotifyInstall install, double vol)
+    {
+        volEnabled = enabled; volState = state; volInstall = install;
+        if (!volDragging) volume = vol;
+        ApplyVolumeLook(animate: false);
+    }
+
+    void ApplyVolumeLook(bool animate)
+    {
+        bool store = volInstall == SpotifyInstall.Store;
+        bool on = volEnabled && !store;
+        VolRow.Opacity = store ? 0.4 : 1;
+        VolRow.Cursor = store ? Cursors.Arrow : Cursors.Hand;
+        VolKnobShift.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(on ? 14 : 0, TimeSpan.FromMilliseconds(animate ? 220 : 0))
+            { EasingFunction = new BackEase { Amplitude = 0.3, EasingMode = EasingMode.EaseOut } });
+        VolSwitch.Background = on ? accent : new SolidColorBrush(Color.FromArgb(0x33, 255, 255, 255));
+
+        // notice under the switch (settings): Store install, or Spotify missing
+        string? note = store ? S.VolStore : on && volState == VolumeState.NotInstalled ? S.VolNotInstalled : null;
+        VolNoteText.Text = note ?? "";
+        VolNoteLink.Text = store ? S.VolStoreLink : "";
+        VolNoteLink.Visibility = store ? Visibility.Visible : Visibility.Collapsed;
+        var noteVis = note != null ? Visibility.Visible : Visibility.Collapsed;
+
+        // main area: the slider when live, a "reopen Spotify" hint while waiting
+        bool live = on && volState == VolumeState.Connected && volume >= 0;
+        bool waiting = on && volState is VolumeState.Waiting or VolumeState.Failed;
+        VolHintText.Text = volState == VolumeState.Failed ? S.VolFailed : S.VolWaiting;
+        var areaVis = live ? Visibility.Visible : Visibility.Collapsed;
+        var hintVis = waiting ? Visibility.Visible : Visibility.Collapsed;
+
+        bool resized = VolNote.Visibility != noteVis || VolumeArea.Visibility != areaVis || VolHint.Visibility != hintVis;
+        VolNote.Visibility = noteVis; VolumeArea.Visibility = areaVis; VolHint.Visibility = hintVis;
+        if (live) ShowVolume(volume);
+        if (resized && settingsHeight > 0) Remeasure();
+    }
+
+    void OnVolLink()
+    {
+        if (volInstall == SpotifyInstall.Store)
+        {
+            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://www.spotify.com/download/windows/") { UseShellExecute = true }); } catch { }
+        }
+        else RestartSpotify?.Invoke();
+    }
+
+    void ShowVolume(double v)
+    {
+        double w = VolTrack.ActualWidth > 0 ? VolTrack.ActualWidth : Card.Width - 38 - 31 - 8;
+        VolFill.Width = w * v;
+        VolKnob.Margin = new Thickness(Math.Clamp(w * v - 6, -6, w - 6), 0, 0, 0);
+        VolIcon.Text = v <= 0.001 ? "" : v < 0.34 ? "" : v < 0.67 ? "" : "";
+    }
+
+    void ChooseVolume(double v)
+    {
+        volume = Math.Clamp(v, 0, 1);
+        ShowVolume(volume);
+        VolumeSet?.Invoke(volume);
+    }
+
+    void OnMute(object sender, RoutedEventArgs e)
+    {
+        if (volume > 0.001) { beforeMute = volume; ChooseVolume(0); }
+        else ChooseVolume(beforeMute > 0.001 ? beforeMute : 0.5);
+    }
+
+    void WireVolume()
+    {
+        double FracAt(MouseEventArgs e) => VolTrack.ActualWidth > 0 ? Math.Clamp(e.GetPosition(VolTrack).X / VolTrack.ActualWidth, 0, 1) : 0;
+        VolArea.MouseEnter += (_, _) => VolKnob.Opacity = 1;
+        VolArea.MouseLeave += (_, _) => { if (!volDragging) VolKnob.Opacity = 0; };
+        VolArea.MouseLeftButtonDown += (_, e) =>
+        {
+            volDragging = true; VolArea.CaptureMouse(); VolKnob.Opacity = 1;
+            ChooseVolume(FracAt(e)); e.Handled = true;
+        };
+        VolArea.MouseMove += (_, e) => { if (volDragging) ChooseVolume(FracAt(e)); };
+        VolArea.MouseLeftButtonUp += (_, e) =>
+        {
+            if (!volDragging) return;
+            volDragging = false; VolArea.ReleaseMouseCapture();
+            if (!VolArea.IsMouseOver) VolKnob.Opacity = 0;
+            ChooseVolume(FracAt(e));
+        };
+        VolArea.LostMouseCapture += (_, _) => volDragging = false;
+        VolumeArea.MouseWheel += (_, e) => { if (volume >= 0) ChooseVolume(Math.Round((volume + Math.Sign(e.Delta) * 0.05) * 20) / 20); e.Handled = true; };
+        VolTrack.SizeChanged += (_, _) => { if (volume >= 0) ShowVolume(volume); };
+    }
+
+    /// <summary>Content height changed (volume row / notice appeared): resize the window, keeping its bottom edge.</summary>
+    void Remeasure()
+    {
+        double bottom = Top + Height;
+        SettingsContent.Measure(new Size(Card.Width - 38, double.PositiveInfinity));
+        settingsHeight = Math.Ceiling(SettingsContent.DesiredSize.Height);
+        Card.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        double closed = Card.DesiredSize.Height - SettingsPanel.Height;
+        Height = Math.Ceiling(closed) + settingsHeight + 2;
+        if (settingsOpen) SettingsPanel.BeginAnimation(HeightProperty, Smooth(new DoubleAnimation(settingsHeight, TimeSpan.FromMilliseconds(200))));
+        if (IsVisible && !double.IsNaN(bottom)) Top = Math.Round(bottom - Height);
+    }
 
     void OnControl(object sender, RoutedEventArgs e) => Command?.Invoke((string)((Button)sender).Tag);
 
@@ -200,7 +330,7 @@ public partial class CardWindow : Window
     }
 
     /// <summary>True while the user drags the seek bar (keeps the card open even if the cursor leaves it).</summary>
-    public bool IsSeeking => seeking;
+    public bool IsSeeking => seeking || volDragging;
 
     static string Fmt(double s) { var t = TimeSpan.FromSeconds(Math.Max(0, s)); return t.TotalHours >= 1 ? t.ToString(@"h\:mm\:ss") : $"{(int)t.TotalMinutes}:{t.Seconds:00}"; }
 
